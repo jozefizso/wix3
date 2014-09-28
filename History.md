@@ -1,3 +1,7 @@
+## WixBuild: Version 3.11.x-dev
+
+* HeathS: WIXBUG:4541 - Add support for high DPI to the Burn engine
+
 ## WixBuild: Version 3.14.0.1703
 
 * RobMen - WIXBUG:5486 - Fix potential deadlock with VSTS logger
