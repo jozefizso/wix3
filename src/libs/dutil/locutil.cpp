@@ -53,7 +53,7 @@ extern "C" HRESULT DAPI LocProbeForFile(
         }
     }
 
-    langid = ::GetUserDefaultLangID();
+    langid = ::GetUserDefaultUILanguage();
 
     hr = StrAllocFormatted(&sczLangIdFile, L"%u\\%ls", langid, wzLocFileName);
     ExitOnFailure(hr, "Failed to format user langid.");
