@@ -1,4 +1,7 @@
 # WiX Toolset on GitHub
+
+> Custom WiX Toolset v3.10.3 release (`feature/5285-user_ui_language` and `feature/3789-wixbundleuilevel` applied).
+
 The WiX Toolset builds Windows installation packages from XML source code. The toolset supports a command-line environment that developers may integrate into their build processes to build Windows Installer (MSI) packages and executable bundles. The WiX GitHub project hosts the WiX source code Git repositories. The following links will take you to more details:
 
 ## [Home page](http://wixtoolset.org/ "WiX Toolset home page")
