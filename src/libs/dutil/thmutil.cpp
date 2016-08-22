@@ -2093,6 +2093,36 @@ static HRESULT ParseFonts(
             ExitOnRootFailure(hr, "Theme font id duplicated.");
         }
 
+
+        POINT ptCursor = {};
+        HMONITOR hMonitor = NULL;
+        MONITORINFOEXW mi;
+        HDC hdc = NULL;
+        UINT dpiX = 0;
+
+        if (::GetCursorPos(&ptCursor))
+        {
+            hMonitor = ::MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
+            if (hMonitor)
+            {
+                ZeroMemory(&mi, sizeof(mi));
+                mi.cbSize = sizeof(mi);
+
+                if (::GetMonitorInfoW(hMonitor, &mi))
+                {
+                    hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
+                    if (hdc)
+                    {
+                        dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+
+                        ::ReleaseDC(NULL, hdc);
+                    }
+                }
+            }
+        }
+
+        lf.lfHeight = MulDiv(lf.lfHeight, dpiX, 100);
+
         pFont->hFont = ::CreateFontIndirectW(&lf);
         ExitOnNullWithLastError(pFont->hFont, hr, "Failed to create product title font.");
 
