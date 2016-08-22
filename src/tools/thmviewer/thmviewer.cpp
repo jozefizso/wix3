@@ -66,6 +66,13 @@ int WINAPI wWinMain(
     BOOL fRet = FALSE;
     MSG msg = { };
 
+	POINT ptCursor = {};
+	HMONITOR hMonitor = NULL;
+	MONITORINFOEXW mi;
+	HDC hdc = NULL;
+	UINT dpiX = 0;
+	UINT dpiY = 0;
+
     hr = ::CoInitialize(NULL);
     ExitOnFailure(hr, "Failed to initialize COM.");
     fComInitialized = TRUE;
@@ -79,7 +86,32 @@ int WINAPI wWinMain(
     hr = CreateMainWindowClass(hInstance, vpTheme, &atom);
     ExitOnFailure(hr, "Failed to create main window.");
 
-    hWnd = ::CreateWindowExW(0, reinterpret_cast<LPCWSTR>(atom), vpTheme->sczCaption, vpTheme->dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, vpTheme->nWidth, vpTheme->nHeight, HWND_DESKTOP, NULL, hInstance, NULL);
+    if (::GetCursorPos(&ptCursor))
+    {
+        hMonitor = ::MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
+        if (hMonitor)
+        {
+            ZeroMemory(&mi, sizeof(mi));
+            mi.cbSize = sizeof(mi);
+
+            if (::GetMonitorInfoW(hMonitor, &mi))
+            {
+                hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
+                if (hdc)
+                {
+                    dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+                    dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+
+                    ::ReleaseDC(NULL, hdc);
+                }
+            }
+        }
+    }
+
+	int nThemeWidth = MulDiv(vpTheme->nWidth, dpiX, 100);
+	int nThemeHeight = MulDiv(vpTheme->nHeight, dpiY, 100);
+
+    hWnd = ::CreateWindowExW(0, reinterpret_cast<LPCWSTR>(atom), vpTheme->sczCaption, vpTheme->dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, nThemeWidth, nThemeHeight, HWND_DESKTOP, NULL, hInstance, NULL);
     ExitOnNullWithLastError(hWnd, hr, "Failed to create window.");
 
     if (!sczThemeFile)

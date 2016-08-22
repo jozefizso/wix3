@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test related", "test related", "{9FF20224-B6C0-4378-BD15-4857EAD6A3DC}"
 	ProjectSection(SolutionItems) = preProject
@@ -367,6 +367,7 @@ Global
 		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Debug|Win32.Build.0 = Debug|Win32
 		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Debug|x64.ActiveCfg = Debug|Win32
 		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Debug|x86.ActiveCfg = Debug|Win32
+		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Debug|x86.Build.0 = Debug|Win32
 		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Release|Any CPU.ActiveCfg = Debug|Win32
 		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Release|arm.ActiveCfg = Release|Win32
 		{95228C13-97F5-484A-B4A2-ECF4618B0881}.Release|Mixed Platforms.ActiveCfg = Release|Win32
@@ -586,7 +587,6 @@ Global
 		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Debug|x64.ActiveCfg = Debug|x64
 		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Debug|x64.Build.0 = Debug|x64
 		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Debug|x86.ActiveCfg = Debug|x86
-		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Debug|x86.Build.0 = Debug|x86
 		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{31FCC013-485E-487D-89D8-6C19EDCDD9A3}.Release|arm.ActiveCfg = Release|arm
@@ -618,7 +618,6 @@ Global
 		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Debug|x64.ActiveCfg = Debug|x64
 		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Debug|x64.Build.0 = Debug|x64
 		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Debug|x86.ActiveCfg = Debug|x86
-		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Debug|x86.Build.0 = Debug|x86
 		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{55CB1042-647B-4347-9876-3EA607AF8DCE}.Release|arm.ActiveCfg = Release|arm
