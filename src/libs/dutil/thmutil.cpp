@@ -3091,6 +3091,13 @@ static HRESULT DrawBillboard(
     return S_OK;
 }
 
+static int ScaleToDpi(
+    int pixels,
+    int dpi
+)
+{
+    return MulDiv(pixels, dpi, 100);
+}
 
 static HRESULT DrawButton(
     __in THEME* pTheme,
@@ -3114,8 +3121,11 @@ static HRESULT DrawButton(
     {
         nSourceY += pControl->nHeight;
     }
+	
+    int dpiX = ::GetDeviceCaps(pdis->hDC, LOGPIXELSX);
+    int dpiY = ::GetDeviceCaps(pdis->hDC, LOGPIXELSY);
 
-    ::StretchBlt(pdis->hDC, 0, 0, pControl->nWidth, pControl->nHeight, hdcMem, nSourceX, nSourceY, pControl->nWidth, pControl->nHeight, SRCCOPY);
+    ::StretchBlt(pdis->hDC, 0, 0, ScaleToDpi(pControl->nWidth, dpiX), ScaleToDpi(pControl->nHeight, dpiY), hdcMem, ScaleToDpi(nSourceX, dpiX), ScaleToDpi(nSourceY, dpiY), ScaleToDpi(pControl->nWidth, dpiX), ScaleToDpi(pControl->nHeight, dpiY), SRCCOPY);
 
     if (WS_TABSTOP & dwStyle && ODS_FOCUS & pdis->itemState)
     {

@@ -59,6 +59,15 @@ LExit:
     return hr;
 }
 
+static int ScaleToDpi(
+    int pixels,
+    int dpi
+)
+{
+    return MulDiv(pixels, dpi, 100);
+}
+
+
 static DWORD WINAPI DisplayThreadProc(
     __in LPVOID pvContext
     )
@@ -104,13 +113,42 @@ static DWORD WINAPI DisplayThreadProc(
         {
             THEME* pTheme = pCurrentHandle->pTheme;
 
-            if (CW_USEDEFAULT == x && CW_USEDEFAULT == y && ::GetWindowRect(hwndParent, &rc))
+            POINT ptCursor = {};
+            HMONITOR hMonitor = NULL;
+            MONITORINFOEXW mi;
+            HDC hdc = NULL;
+            UINT dpiX = 0;
+            UINT dpiY = 0;
+
+            if (::GetCursorPos(&ptCursor))
             {
-                x = rc.left;
-                y = rc.bottom + 20;
+                hMonitor = ::MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
+                if (hMonitor)
+                {
+                    ZeroMemory(&mi, sizeof(mi));
+                    mi.cbSize = sizeof(mi);
+
+                    if (::GetMonitorInfoW(hMonitor, &mi))
+                    {
+                        hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
+                        if (hdc)
+                        {
+                            dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+                            dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+
+                            ::ReleaseDC(NULL, hdc);
+                        }
+                    }
+                }
             }
 
-            hWnd = ::CreateWindowExW(0, wc.lpszClassName, pTheme->sczCaption, pTheme->dwStyle, x, y, pTheme->nWidth, pTheme->nHeight, hwndParent, NULL, hInstance, pCurrentHandle);
+            if (CW_USEDEFAULT == x && CW_USEDEFAULT == y && ::GetWindowRect(hwndParent, &rc))
+            {
+                x = rc.right + ScaleToDpi(10, dpiX);
+                y = rc.top;
+            }
+
+            hWnd = ::CreateWindowExW(0, wc.lpszClassName, pTheme->sczCaption, pTheme->dwStyle, x, y, ScaleToDpi(pTheme->nWidth, dpiX), ScaleToDpi(pTheme->nHeight, dpiY), hwndParent, NULL, hInstance, pCurrentHandle);
             ExitOnNullWithLastError(hWnd, hr, "Failed to create display window.");
 
             fCreateIfNecessary = FALSE;
