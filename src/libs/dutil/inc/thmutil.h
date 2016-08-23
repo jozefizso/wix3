@@ -179,13 +179,17 @@ struct THEME
     // state variables that should be ignored
     HWND hwndParent; // parent for loaded controls
     HWND hwndHover; // current hwnd hovered over
-};
 
+    // DPI scaling
+    int nDpiX;
+    int nDpiY;
+};
 
 static int ScaleToDpi(
     int pixels,
     int dpi
 );
+
 
 /********************************************************************
  ThemeInitialize - initialized theme management.

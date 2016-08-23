@@ -10,9 +10,6 @@
 #define LWS_NOPREFIX        0x0004
 #endif
 
-#define ScaleX(x)   x = MulDiv(x, dpiX, 100)
-#define ScaleY(y)   y = MulDiv(y, dpiY, 100)
-
 const DWORD THEME_INVALID_ID = 0xFFFFFFFF;
 const COLORREF THEME_INVISIBLE_COLORREF = 0xFFFFFFFF;
 const DWORD GROW_WINDOW_TEXT = 250;
@@ -96,9 +93,7 @@ static HRESULT ParseControl(
     __in IXMLDOMNode* pixn,
     __in THEME_CONTROL_TYPE type,
     __in THEME* pTheme,
-    __in DWORD iControl,
-    int dpiX,
-    int dpiY
+    __in DWORD iControl
     );
 static HRESULT ParseBillboards(
     __in_opt HMODULE hModule,
@@ -212,6 +207,17 @@ static void GetControlDimensions(
 // calculates final width of each column (storing result in each column's nWidth value)
 static HRESULT SizeListViewColumns(
     __inout THEME_CONTROL* pControl
+    );
+static void ScaleApplication(
+    __in THEME* pTheme
+    );
+static void ScaleControl(
+    __in THEME* pTheme,
+    __in THEME_CONTROL* pControl
+    );
+static void ScaleFont(
+    __in THEME* pTheme,
+    __in LOGFONTW* lf
     );
 
 DAPI_(HRESULT) ThemeInitialize(
@@ -1672,6 +1678,8 @@ static HRESULT ParseTheme(
     ExitOnNull(pTheme, hr, E_OUTOFMEMORY, "Failed to allocate memory for theme.");
 
     pTheme->wId = ++wThemeId;
+    pTheme->nDpiX = 96;
+    pTheme->nDpiY = 96;
 
     // Parse the optional background resource image.
     hr = ParseImage(hModule, wzRelativePath, pThemeElement, &pTheme->hImage);
@@ -1803,7 +1811,6 @@ static HRESULT ParseApplication(
     IXMLDOMNode* pixn = NULL;
     BSTR bstr = NULL;
     LPWSTR sczIconFile = NULL;
-    int dpiX = 192, dpiY = 192;
 
     hr = XmlSelectSingleNode(pElement, L"Window|Application|App|a", &pixn);
     if (S_FALSE == hr)
@@ -1830,7 +1837,6 @@ static HRESULT ParseApplication(
         }
     }
     ExitOnFailure(hr, "Failed to get application width attribute.");
-    ScaleX(pTheme->nWidth);
 
     hr = XmlGetAttributeNumber(pixn, L"Height", reinterpret_cast<DWORD*>(&pTheme->nHeight));
     if (S_FALSE == hr)
@@ -1843,7 +1849,6 @@ static HRESULT ParseApplication(
         }
     }
     ExitOnFailure(hr, "Failed to get application height attribute.");
-    ScaleY(pTheme->nHeight);
 
     hr = XmlGetAttributeNumber(pixn, L"MinimumWidth", reinterpret_cast<DWORD*>(&pTheme->nMinimumWidth));
     if (S_FALSE == hr)
@@ -1969,6 +1974,8 @@ static HRESULT ParseApplication(
         ExitOnFailure(hr, "Failed to copy application caption.");
     }
 
+    ScaleApplication(pTheme);
+
 LExit:
     ReleaseStr(sczIconFile);
     ReleaseBSTR(bstr);
@@ -1977,6 +1984,53 @@ LExit:
     return hr;
 }
 
+static int ScaleToDpi(
+    int pixels,
+    int dpi
+    )
+{
+    return MulDiv(pixels, dpi, 100);
+}
+
+static void ScaleApplication(
+    __in THEME* pTheme
+    )
+{
+    pTheme->nWidth = ScaleToDpi(pTheme->nWidth, pTheme->nDpiX);
+    pTheme->nHeight = ScaleToDpi(pTheme->nHeight, pTheme->nDpiY);
+
+    pTheme->nMinimumWidth = ScaleToDpi(pTheme->nMinimumWidth, pTheme->nDpiX);
+    pTheme->nMinimumHeight = ScaleToDpi(pTheme->nMinimumHeight, pTheme->nDpiY);
+
+    pTheme->nSourceX = ScaleToDpi(pTheme->nSourceX, pTheme->nDpiX);
+    pTheme->nSourceY = ScaleToDpi(pTheme->nSourceY, pTheme->nDpiY);
+}
+
+static void ScaleControl(
+    __in THEME* pTheme,
+    __in THEME_CONTROL* pControl
+    )
+{
+    pControl->nX = ScaleToDpi(pControl->nX, pTheme->nDpiX);
+    pControl->nY = ScaleToDpi(pControl->nY, pTheme->nDpiY);
+
+    pControl->nWidth = ScaleToDpi(pControl->nWidth, pTheme->nDpiX);
+    pControl->nHeight = ScaleToDpi(pControl->nHeight, pTheme->nDpiY);
+
+    pControl->nSourceX = ScaleToDpi(pControl->nSourceX, pTheme->nDpiX);
+    pControl->nSourceY = ScaleToDpi(pControl->nSourceY, pTheme->nDpiY);
+}
+
+static void ScaleFont(
+    __in THEME* pTheme,
+    __in LOGFONTW* lf
+    )
+{
+    if (lf->lfHeight < 0)
+    {
+        lf->lfHeight = ScaleToDpi(lf->lfHeight, pTheme->nDpiX);
+    }
+}
 
 static HRESULT ParseFonts(
     __in IXMLDOMElement* pElement,
@@ -2102,35 +2156,7 @@ static HRESULT ParseFonts(
             ExitOnRootFailure(hr, "Theme font id duplicated.");
         }
 
-
-        POINT ptCursor = {};
-        HMONITOR hMonitor = NULL;
-        MONITORINFOEXW mi;
-        HDC hdc = NULL;
-        UINT dpiX = 0;
-
-        if (::GetCursorPos(&ptCursor))
-        {
-            hMonitor = ::MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
-            if (hMonitor)
-            {
-                ZeroMemory(&mi, sizeof(mi));
-                mi.cbSize = sizeof(mi);
-
-                if (::GetMonitorInfoW(hMonitor, &mi))
-                {
-                    hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
-                    if (hdc)
-                    {
-                        dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
-
-                        ::ReleaseDC(NULL, hdc);
-                    }
-                }
-            }
-        }
-
-        lf.lfHeight = MulDiv(lf.lfHeight, dpiX, 100);
+        ScaleFont(pTheme, &lf);
 
         pFont->hFont = ::CreateFontIndirectW(&lf);
         ExitOnNullWithLastError(pFont->hFont, hr, "Failed to create product title font.");
@@ -2469,7 +2495,7 @@ static HRESULT ParseControls(
 
         if (THEME_CONTROL_TYPE_UNKNOWN != type)
         {
-            hr = ParseControl(hModule, wzRelativePath, pixn, type, pTheme, iControl, 192, 192);
+            hr = ParseControl(hModule, wzRelativePath, pixn, type, pTheme, iControl);
             ExitOnFailure(hr, "Failed to parse control.");
 
             if (pPage)
@@ -2507,9 +2533,7 @@ static HRESULT ParseControl(
     __in IXMLDOMNode* pixn,
     __in THEME_CONTROL_TYPE type,
     __in THEME* pTheme,
-    __in DWORD iControl,
-    int dpiX,
-    int dpiY
+    __in DWORD iControl
     )
 {
     HRESULT hr = S_OK;
@@ -2558,7 +2582,6 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control X attribute.");
-    ScaleX(pControl->nX);
 
     hr = XmlGetAttributeNumber(pixn, L"Y", reinterpret_cast<DWORD*>(&pControl->nY));
     if (S_FALSE == hr)
@@ -2570,7 +2593,6 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control Y attribute.");
-    ScaleY(pControl->nY);
 
     hr = XmlGetAttributeNumber(pixn, L"Height", reinterpret_cast<DWORD*>(&pControl->nHeight));
     if (S_FALSE == hr)
@@ -2582,7 +2604,6 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control height attribute.");
-    ScaleX(pControl->nHeight);
 
     hr = XmlGetAttributeNumber(pixn, L"Width", reinterpret_cast<DWORD*>(&pControl->nWidth));
     if (S_FALSE == hr)
@@ -2594,7 +2615,6 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control width attribute.");
-    ScaleY(pControl->nWidth);
 
     // Parse the optional background resource image.
     hr = ParseImage(hModule, wzRelativePath, pixn, &pControl->hImage);
@@ -2907,6 +2927,8 @@ static HRESULT ParseControl(
         hr = ParseTabs(pixn, pControl);
         ExitOnFailure(hr, "Failed to parse tabs");
     }
+
+    ScaleControl(pTheme, pControl);
 
 LExit:
     ReleaseBSTR(bstrText);
