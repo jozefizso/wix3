@@ -6,6 +6,7 @@ struct LOAD_THREAD_CONTEXT
 {
     HWND hWnd;
     LPWSTR sczThemePath;
+	WIX_LOCALIZATION* vpLocalization;
 
     HANDLE hInit;
 };
@@ -17,6 +18,7 @@ static DWORD WINAPI LoadThreadProc(
 
 extern "C" HRESULT LoadStart(
     __in_z LPCWSTR wzThemePath,
+	__in WIX_LOCALIZATION* vpLocalization,
     __in HWND hWnd,
     __out HANDLE* phThread
     )
@@ -34,6 +36,7 @@ extern "C" HRESULT LoadStart(
 
     context.hWnd = hWnd;
     context.sczThemePath = sczThemePath;
+	context.vpLocalization = vpLocalization;
     context.hInit = rgHandles[0];
 
     rgHandles[1] = ::CreateThread(NULL, 0, LoadThreadProc, &context, 0, NULL);
@@ -62,6 +65,7 @@ static DWORD WINAPI LoadThreadProc(
     LOAD_THREAD_CONTEXT* pContext = static_cast<LOAD_THREAD_CONTEXT*>(pvContext);
     LPWSTR sczThemePath = pContext->sczThemePath;
     HWND hWnd = pContext->hWnd;
+	WIX_LOCALIZATION* vpLocalization = pContext->vpLocalization;
 
     // We can signal the initialization event as soon as we have copied the context
     // values into local variables.
@@ -73,7 +77,7 @@ static DWORD WINAPI LoadThreadProc(
     LPWSTR wzFileName = NULL;
 
     THEME* pTheme = NULL;
-    HANDLE_THEME* pHandle = NULL;
+	HANDLE_THEME* pHandle = NULL;
 
     hr = ::CoInitialize(NULL);
     ExitOnFailure(hr, "Failed to initialize COM on load thread.");
@@ -105,6 +109,12 @@ static DWORD WINAPI LoadThreadProc(
         {
             ::SendMessageW(hWnd, WM_THMVWR_THEME_LOAD_ERROR, 0, hr);
         }
+
+		hr = ThemeLocalize(pTheme, vpLocalization);
+		if (FAILED(hr))
+		{
+			::SendMessageW(hWnd, WM_THMVWR_THEME_LOAD_ERROR, 0, hr);
+		}
         else
         {
             hr = AllocHandleTheme(pTheme, &pHandle);

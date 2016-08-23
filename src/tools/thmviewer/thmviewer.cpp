@@ -5,6 +5,7 @@
 static const LPCWSTR THMVWR_WINDOW_CLASS_MAIN = L"ThmViewerMain";
 
 static THEME* vpTheme = NULL;
+static WIX_LOCALIZATION* vpLocalization = NULL;
 static DWORD vdwDisplayThreadId = 0;
 
 enum THMVWR_CONTROL
@@ -56,7 +57,9 @@ int WINAPI wWinMain(
 
     HRESULT hr = S_OK;
     BOOL fComInitialized = FALSE;
-    LPWSTR sczThemeFile = NULL;
+	LPWSTR sczThemeFile = NULL;
+	LPWSTR sczThemeFileDir = NULL;
+	LPWSTR sczLocFile = NULL;
     ATOM atom = 0;
     HWND hWnd = NULL;
 
@@ -82,6 +85,17 @@ int WINAPI wWinMain(
 
     hr = CreateTheme(hInstance, &vpTheme);
     ExitOnFailure(hr, "Failed to create theme.");
+
+	hr = StrAllocConcat(&sczThemeFileDir, sczThemeFile, 0);
+	ExitOnFailure(hr, "Failed copy theme file buffer.");
+
+	PathRemoveFileSpec(sczThemeFileDir);
+
+	hr = LocProbeForFile(sczThemeFileDir, L"thm.wxl", L"1033", &sczLocFile);
+	ExitOnFailure(hr, "Failed to probe for localization file.");
+
+	hr = LocLoadFromFile(sczLocFile, &vpLocalization);
+	ExitOnFailure(hr, "Failed to load localization file.");
 
     hr = CreateMainWindowClass(hInstance, vpTheme, &atom);
     ExitOnFailure(hr, "Failed to create main window.");
@@ -144,7 +158,7 @@ int WINAPI wWinMain(
     hr = DisplayStart(hInstance, hWnd, &hDisplayThread, &vdwDisplayThreadId);
     ExitOnFailure(hr, "Failed to start display.");
 
-    hr = LoadStart(sczThemeFile, hWnd, &hLoadThread);
+    hr = LoadStart(sczThemeFile, vpLocalization, hWnd, &hLoadThread);
     ExitOnFailure(hr, "Failed to start load.");
 
     // message pump
@@ -185,6 +199,8 @@ LExit:
         er = er;
     }
 
+	LocFree(vpLocalization);
+
     ThemeFree(vpTheme);
     ThemeUninitialize();
 
@@ -194,7 +210,8 @@ LExit:
         ::CoUninitialize();
     }
 
-    ReleaseStr(sczThemeFile);
+	ReleaseStr(sczThemeFile);
+	ReleaseStr(sczLocFile);
     return hr;
 }
 

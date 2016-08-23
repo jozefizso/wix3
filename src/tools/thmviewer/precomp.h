@@ -48,6 +48,7 @@ extern "C" HRESULT DisplayStart(
     );
 extern "C" HRESULT LoadStart(
     __in_z LPCWSTR wzThemePath,
+	__in WIX_LOCALIZATION* vpLocalization,
     __in HWND hWnd,
     __out HANDLE* phThread
     );
