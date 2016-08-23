@@ -1315,7 +1315,7 @@ private: // privates
         hr = LocProbeForFile(wzModulePath, wzThemeFileName, wzLanguage, &sczThemePath);
         BalExitOnFailure2(hr, "Failed to probe for theme file: %ls in path: %ls", wzThemeFileName, wzModulePath);
 
-        hr = ThemeLoadFromFile(sczThemePath, &m_pTheme);
+        hr = ThemeLoadFromFile(sczThemePath, NULL, &m_pTheme);
         BalExitOnFailure1(hr, "Failed to load theme from path: %ls", sczThemePath);
 
         hr = ThemeLocalize(m_pTheme, m_pWixLoc);

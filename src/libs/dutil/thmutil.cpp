@@ -44,6 +44,7 @@ struct MEMBUFFER_FOR_RICHEDIT
 // prototypes
 static HRESULT ParseTheme(
     __in_opt HMODULE hModule,
+    __in HWND hWndParent,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMDocument* pixd,
     __out THEME** ppTheme
@@ -294,6 +295,7 @@ DAPI_(void) ThemeUninitialize()
 
 DAPI_(HRESULT) ThemeLoadFromFile(
     __in_z LPCWSTR wzThemeFile,
+    __in HWND hWndParent,
     __out THEME** ppTheme
     )
 {
@@ -307,7 +309,7 @@ DAPI_(HRESULT) ThemeLoadFromFile(
     hr = PathGetDirectory(wzThemeFile, &sczRelativePath);
     ExitOnFailure(hr, "Failed to get relative path from theme file.");
 
-    hr = ParseTheme(NULL, sczRelativePath, pixd, ppTheme);
+    hr = ParseTheme(NULL, hWndParent, sczRelativePath, pixd, ppTheme);
     ExitOnFailure(hr, "Failed to parse theme.");
 
 LExit:
@@ -320,6 +322,7 @@ LExit:
 
 DAPI_(HRESULT) ThemeLoadFromResource(
     __in_opt HMODULE hModule,
+    __in HWND hWndParent,
     __in_z LPCSTR szResource,
     __out THEME** ppTheme
     )
@@ -342,7 +345,7 @@ DAPI_(HRESULT) ThemeLoadFromResource(
     hr = XmlLoadDocument(sczXml, &pixd);
     ExitOnFailure(hr, "Failed to load theme resource as XML document.");
 
-    hr = ParseTheme(hModule, NULL, pixd, ppTheme);
+    hr = ParseTheme(hModule, hWndParent, NULL, pixd, ppTheme);
     ExitOnFailure(hr, "Failed to parse theme.");
 
 LExit:
@@ -1660,6 +1663,7 @@ DAPI_(void) ThemeSetFocus(
 
 static HRESULT ParseTheme(
     __in_opt HMODULE hModule,
+    __in HWND hWndParent,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMDocument* pixd,
     __out THEME** ppTheme
@@ -1678,8 +1682,33 @@ static HRESULT ParseTheme(
     ExitOnNull(pTheme, hr, E_OUTOFMEMORY, "Failed to allocate memory for theme.");
 
     pTheme->wId = ++wThemeId;
-    pTheme->nDpiX = 96;
-    pTheme->nDpiY = 96;
+
+    HMONITOR hMonitor = NULL;
+    MONITORINFOEXW mi;
+    HDC hdc = NULL;
+    UINT dpiX = 96;
+    UINT dpiY = 96;
+    
+    hMonitor = ::MonitorFromWindow(hWndParent, MONITOR_DEFAULTTOPRIMARY);
+    if (hMonitor)
+    {
+        SecureZeroMemory(&mi, sizeof(mi));
+        mi.cbSize = sizeof(mi);
+
+        if (::GetMonitorInfoW(hMonitor, &mi))
+        {
+            hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
+            if (hdc)
+            {
+                dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+                dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+
+                ::ReleaseDC(NULL, hdc);
+            }
+        }
+    }
+    pTheme->nScaleFactorX = dpiX / 96;
+    pTheme->nScaleFactorY = dpiY / 96;
 
     // Parse the optional background resource image.
     hr = ParseImage(hModule, wzRelativePath, pThemeElement, &pTheme->hImage);
@@ -1984,26 +2013,26 @@ LExit:
     return hr;
 }
 
-static int ScaleToDpi(
+static int ScaleByFactor(
     int pixels,
-    int dpi
+    UINT nScaleFactor
     )
 {
-    return MulDiv(pixels, dpi, 100);
+    return pixels * nScaleFactor;
 }
 
 static void ScaleApplication(
     __in THEME* pTheme
     )
 {
-    pTheme->nWidth = ScaleToDpi(pTheme->nWidth, pTheme->nDpiX);
-    pTheme->nHeight = ScaleToDpi(pTheme->nHeight, pTheme->nDpiY);
+    pTheme->nWidth = ScaleByFactor(pTheme->nWidth, pTheme->nScaleFactorX);
+    pTheme->nHeight = ScaleByFactor(pTheme->nHeight, pTheme->nScaleFactorY);
 
-    pTheme->nMinimumWidth = ScaleToDpi(pTheme->nMinimumWidth, pTheme->nDpiX);
-    pTheme->nMinimumHeight = ScaleToDpi(pTheme->nMinimumHeight, pTheme->nDpiY);
+    pTheme->nMinimumWidth = ScaleByFactor(pTheme->nMinimumWidth, pTheme->nScaleFactorX);
+    pTheme->nMinimumHeight = ScaleByFactor(pTheme->nMinimumHeight, pTheme->nScaleFactorY);
 
-    pTheme->nSourceX = ScaleToDpi(pTheme->nSourceX, pTheme->nDpiX);
-    pTheme->nSourceY = ScaleToDpi(pTheme->nSourceY, pTheme->nDpiY);
+    pTheme->nSourceX = ScaleByFactor(pTheme->nSourceX, pTheme->nScaleFactorX);
+    pTheme->nSourceY = ScaleByFactor(pTheme->nSourceY, pTheme->nScaleFactorY);
 }
 
 static void ScaleControl(
@@ -2011,14 +2040,14 @@ static void ScaleControl(
     __in THEME_CONTROL* pControl
     )
 {
-    pControl->nX = ScaleToDpi(pControl->nX, pTheme->nDpiX);
-    pControl->nY = ScaleToDpi(pControl->nY, pTheme->nDpiY);
+    pControl->nX = ScaleByFactor(pControl->nX, pTheme->nScaleFactorX);
+    pControl->nY = ScaleByFactor(pControl->nY, pTheme->nScaleFactorY);
 
-    pControl->nWidth = ScaleToDpi(pControl->nWidth, pTheme->nDpiX);
-    pControl->nHeight = ScaleToDpi(pControl->nHeight, pTheme->nDpiY);
+    pControl->nWidth = ScaleByFactor(pControl->nWidth, pTheme->nScaleFactorX);
+    pControl->nHeight = ScaleByFactor(pControl->nHeight, pTheme->nScaleFactorY);
 
-    pControl->nSourceX = ScaleToDpi(pControl->nSourceX, pTheme->nDpiX);
-    pControl->nSourceY = ScaleToDpi(pControl->nSourceY, pTheme->nDpiY);
+    pControl->nSourceX = ScaleByFactor(pControl->nSourceX, pTheme->nScaleFactorX);
+    pControl->nSourceY = ScaleByFactor(pControl->nSourceY, pTheme->nScaleFactorY);
 }
 
 static void ScaleFont(
@@ -2028,7 +2057,7 @@ static void ScaleFont(
 {
     if (lf->lfHeight < 0)
     {
-        lf->lfHeight = ScaleToDpi(lf->lfHeight, pTheme->nDpiX);
+        lf->lfHeight = ScaleByFactor(lf->lfHeight, pTheme->nScaleFactorX);
     }
 }
 

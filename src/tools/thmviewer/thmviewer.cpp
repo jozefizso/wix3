@@ -26,6 +26,7 @@ static HRESULT ProcessCommandLine(
     );
 static HRESULT CreateTheme(
     __in HINSTANCE hInstance,
+    __in HWND hWndParent,
     __out THEME** ppTheme
     );
 static HRESULT CreateMainWindowClass(
@@ -76,19 +77,8 @@ int WINAPI wWinMain(
     hr = ProcessCommandLine(lpCmdLine, &sczThemeFile);
     ExitOnFailure(hr, "Failed to process command line.");
 
-    hr = CreateTheme(hInstance, &vpTheme);
+    hr = CreateTheme(hInstance, NULL, &vpTheme);
     ExitOnFailure(hr, "Failed to create theme.");
-
-	hr = StrAllocConcat(&sczThemeFileDir, sczThemeFile, 0);
-	ExitOnFailure(hr, "Failed copy theme file buffer.");
-
-	PathRemoveFileSpec(sczThemeFileDir);
-
-	hr = LocProbeForFile(sczThemeFileDir, L"thm.wxl", L"1033", &sczLocFile);
-	ExitOnFailure(hr, "Failed to probe for localization file.");
-
-	hr = LocLoadFromFile(sczLocFile, &vpLocalization);
-	ExitOnFailure(hr, "Failed to load localization file.");
 
     hr = CreateMainWindowClass(hInstance, vpTheme, &atom);
     ExitOnFailure(hr, "Failed to create main window.");
@@ -122,6 +112,17 @@ int WINAPI wWinMain(
             ExitFunction1(hr = E_INVALIDARG);
         }
     }
+
+    hr = StrAllocConcat(&sczThemeFileDir, sczThemeFile, 0);
+    ExitOnFailure(hr, "Failed copy theme file buffer.");
+
+    PathRemoveFileSpec(sczThemeFileDir);
+
+    hr = LocProbeForFile(sczThemeFileDir, L"mbapreq.wxl", L"1033", &sczLocFile);
+    ExitOnFailure(hr, "Failed to probe for localization file.");
+
+    hr = LocLoadFromFile(sczLocFile, &vpLocalization);
+    ExitOnFailure(hr, "Failed to load localization file.");
 
     hr = DisplayStart(hInstance, hWnd, &hDisplayThread, &vdwDisplayThreadId);
     ExitOnFailure(hr, "Failed to start display.");
@@ -234,6 +235,7 @@ LExit:
 
 static HRESULT CreateTheme(
     __in HINSTANCE hInstance,
+    __in HWND hWndParent,
     __out THEME** ppTheme
     )
 {
@@ -242,7 +244,7 @@ static HRESULT CreateTheme(
     hr = ThemeInitialize(hInstance);
     ExitOnFailure(hr, "Failed to initialize theme manager.");
 
-    hr = ThemeLoadFromResource(hInstance, MAKEINTRESOURCEA(THMVWR_RES_THEME_FILE), ppTheme);
+    hr = ThemeLoadFromResource(hInstance, hWndParent, MAKEINTRESOURCEA(THMVWR_RES_THEME_FILE), ppTheme);
     ExitOnFailure(hr, "Failed to load theme from thmviewer.thm.");
 
 LExit:

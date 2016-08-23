@@ -59,9 +59,9 @@ LExit:
     return hr;
 }
 
-static int ScaleToDpi(
+static int ScaleByFactor(
     int pixels,
-    int dpi
+    UINT dpi
 )
 {
     return MulDiv(pixels, dpi, 100);
@@ -144,7 +144,7 @@ static DWORD WINAPI DisplayThreadProc(
 
             if (CW_USEDEFAULT == x && CW_USEDEFAULT == y && ::GetWindowRect(hwndParent, &rc))
             {
-                x = rc.right + ScaleToDpi(10, dpiX);
+                x = rc.right + ScaleByFactor(10, dpiX);
                 y = rc.top;
             }
 

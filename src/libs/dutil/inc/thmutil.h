@@ -181,13 +181,13 @@ struct THEME
     HWND hwndHover; // current hwnd hovered over
 
     // DPI scaling
-    int nDpiX;
-    int nDpiY;
+    UINT nScaleFactorX;
+    UINT nScaleFactorY;
 };
 
-static int ScaleToDpi(
+static int ScaleByFactor(
     int pixels,
-    int dpi
+    UINT nScaleFactor
 );
 
 
@@ -211,6 +211,7 @@ DAPI_(void) ThemeUninitialize();
  *******************************************************************/
 DAPI_(HRESULT) ThemeLoadFromFile(
     __in_z LPCWSTR wzThemeFile,
+    __in HWND hWndParent,
     __out THEME** ppTheme
     );
 
@@ -221,6 +222,7 @@ DAPI_(HRESULT) ThemeLoadFromFile(
 *******************************************************************/
 DAPI_(HRESULT) ThemeLoadFromResource(
     __in_opt HMODULE hModule,
+    __in HWND hWndParent,
     __in_z LPCSTR szResource,
     __out THEME** ppTheme
     );
