@@ -182,6 +182,11 @@ struct THEME
 };
 
 
+static int ScaleToDpi(
+    int pixels,
+    int dpi
+);
+
 /********************************************************************
  ThemeInitialize - initialized theme management.
 

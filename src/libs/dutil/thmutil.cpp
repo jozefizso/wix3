@@ -1803,6 +1803,7 @@ static HRESULT ParseApplication(
     IXMLDOMNode* pixn = NULL;
     BSTR bstr = NULL;
     LPWSTR sczIconFile = NULL;
+    int dpiX = 192, dpiY = 192;
 
     hr = XmlSelectSingleNode(pElement, L"Window|Application|App|a", &pixn);
     if (S_FALSE == hr)
@@ -1829,6 +1830,7 @@ static HRESULT ParseApplication(
         }
     }
     ExitOnFailure(hr, "Failed to get application width attribute.");
+    ScaleX(pTheme->nWidth);
 
     hr = XmlGetAttributeNumber(pixn, L"Height", reinterpret_cast<DWORD*>(&pTheme->nHeight));
     if (S_FALSE == hr)
@@ -1841,6 +1843,7 @@ static HRESULT ParseApplication(
         }
     }
     ExitOnFailure(hr, "Failed to get application height attribute.");
+    ScaleY(pTheme->nHeight);
 
     hr = XmlGetAttributeNumber(pixn, L"MinimumWidth", reinterpret_cast<DWORD*>(&pTheme->nMinimumWidth));
     if (S_FALSE == hr)
@@ -3136,7 +3139,7 @@ static HRESULT DrawBillboard(
 static int ScaleToDpi(
     int pixels,
     int dpi
-)
+    )
 {
     return MulDiv(pixels, dpi, 100);
 }
@@ -3163,7 +3166,7 @@ static HRESULT DrawButton(
     {
         nSourceY += pControl->nHeight;
     }
-	
+    
     int dpiX = ::GetDeviceCaps(pdis->hDC, LOGPIXELSX);
     int dpiY = ::GetDeviceCaps(pdis->hDC, LOGPIXELSY);
 
