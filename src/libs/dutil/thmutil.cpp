@@ -10,6 +10,9 @@
 #define LWS_NOPREFIX        0x0004
 #endif
 
+#define ScaleX(x)   x = MulDiv(x, dpiX, 100)
+#define ScaleY(y)   y = MulDiv(y, dpiY, 100)
+
 const DWORD THEME_INVALID_ID = 0xFFFFFFFF;
 const COLORREF THEME_INVISIBLE_COLORREF = 0xFFFFFFFF;
 const DWORD GROW_WINDOW_TEXT = 250;
@@ -93,7 +96,9 @@ static HRESULT ParseControl(
     __in IXMLDOMNode* pixn,
     __in THEME_CONTROL_TYPE type,
     __in THEME* pTheme,
-    __in DWORD iControl
+    __in DWORD iControl,
+    int dpiX,
+    int dpiY
     );
 static HRESULT ParseBillboards(
     __in_opt HMODULE hModule,
@@ -1769,6 +1774,7 @@ static HRESULT ParseImage(
     {
         Gdiplus::Color black;
         Gdiplus::Status gs = pBitmap->GetHBITMAP(black, phImage);
+
         ExitOnGdipFailure(gs, hr, "Failed to convert GDI+ bitmap into HBITMAP.");
     }
 
@@ -2460,7 +2466,7 @@ static HRESULT ParseControls(
 
         if (THEME_CONTROL_TYPE_UNKNOWN != type)
         {
-            hr = ParseControl(hModule, wzRelativePath, pixn, type, pTheme, iControl);
+            hr = ParseControl(hModule, wzRelativePath, pixn, type, pTheme, iControl, 192, 192);
             ExitOnFailure(hr, "Failed to parse control.");
 
             if (pPage)
@@ -2498,7 +2504,9 @@ static HRESULT ParseControl(
     __in IXMLDOMNode* pixn,
     __in THEME_CONTROL_TYPE type,
     __in THEME* pTheme,
-    __in DWORD iControl
+    __in DWORD iControl,
+    int dpiX,
+    int dpiY
     )
 {
     HRESULT hr = S_OK;
@@ -2547,6 +2555,7 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control X attribute.");
+    ScaleX(pControl->nX);
 
     hr = XmlGetAttributeNumber(pixn, L"Y", reinterpret_cast<DWORD*>(&pControl->nY));
     if (S_FALSE == hr)
@@ -2558,6 +2567,7 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control Y attribute.");
+    ScaleY(pControl->nY);
 
     hr = XmlGetAttributeNumber(pixn, L"Height", reinterpret_cast<DWORD*>(&pControl->nHeight));
     if (S_FALSE == hr)
@@ -2569,6 +2579,7 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control height attribute.");
+    ScaleX(pControl->nHeight);
 
     hr = XmlGetAttributeNumber(pixn, L"Width", reinterpret_cast<DWORD*>(&pControl->nWidth));
     if (S_FALSE == hr)
@@ -2580,6 +2591,7 @@ static HRESULT ParseControl(
         }
     }
     ExitOnFailure(hr, "Failed to find control width attribute.");
+    ScaleY(pControl->nWidth);
 
     // Parse the optional background resource image.
     hr = ParseImage(hModule, wzRelativePath, pixn, &pControl->hImage);
