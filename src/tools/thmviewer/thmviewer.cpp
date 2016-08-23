@@ -66,12 +66,12 @@ int WINAPI wWinMain(
     BOOL fRet = FALSE;
     MSG msg = { };
 
-	POINT ptCursor = {};
-	HMONITOR hMonitor = NULL;
-	MONITORINFOEXW mi;
-	HDC hdc = NULL;
-	UINT dpiX = 0;
-	UINT dpiY = 0;
+    POINT ptCursor = {};
+    HMONITOR hMonitor = NULL;
+    MONITORINFOEXW mi;
+    HDC hdc = NULL;
+    UINT dpiX = 0;
+    UINT dpiY = 0;
 
     hr = ::CoInitialize(NULL);
     ExitOnFailure(hr, "Failed to initialize COM.");
@@ -108,8 +108,8 @@ int WINAPI wWinMain(
         }
     }
 
-	int nThemeWidth = MulDiv(vpTheme->nWidth, dpiX, 100);
-	int nThemeHeight = MulDiv(vpTheme->nHeight, dpiY, 100);
+    int nThemeWidth = MulDiv(vpTheme->nWidth, dpiX, 100);
+    int nThemeHeight = MulDiv(vpTheme->nHeight, dpiY, 100);
 
     hWnd = ::CreateWindowExW(0, reinterpret_cast<LPCWSTR>(atom), vpTheme->sczCaption, vpTheme->dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, nThemeWidth, nThemeHeight, HWND_DESKTOP, NULL, hInstance, NULL);
     ExitOnNullWithLastError(hWnd, hr, "Failed to create window.");
