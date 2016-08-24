@@ -209,6 +209,11 @@ static void GetControlDimensions(
 static HRESULT SizeListViewColumns(
     __inout THEME_CONTROL* pControl
     );
+static BOOL GetDpiForMonitor(
+    __in HWND hWnd,
+    __out UINT* nDpiX,
+    __out UINT* nDpiY
+);
 static void ScaleApplication(
     __in THEME* pTheme
     );
@@ -1683,32 +1688,12 @@ static HRESULT ParseTheme(
 
     pTheme->wId = ++wThemeId;
 
-    HMONITOR hMonitor = NULL;
-    MONITORINFOEXW mi;
-    HDC hdc = NULL;
-    UINT dpiX = 96;
-    UINT dpiY = 96;
-    
-    hMonitor = ::MonitorFromWindow(hWndParent, MONITOR_DEFAULTTOPRIMARY);
-    if (hMonitor)
-    {
-        SecureZeroMemory(&mi, sizeof(mi));
-        mi.cbSize = sizeof(mi);
+    UINT nDpiX;
+    UINT nDpiY;
 
-        if (::GetMonitorInfoW(hMonitor, &mi))
-        {
-            hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
-            if (hdc)
-            {
-                dpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
-                dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
-
-                ::ReleaseDC(NULL, hdc);
-            }
-        }
-    }
-    pTheme->fScaleFactorX = dpiX / 96.0f;
-    pTheme->fScaleFactorY = dpiY / 96.0f;
+    GetDpiForMonitor(hWndParent, &nDpiX, &nDpiY);
+    pTheme->fScaleFactorX = nDpiX / 96.0f;
+    pTheme->fScaleFactorY = nDpiY / 96.0f;
 
     // Parse the optional background resource image.
     hr = ParseImage(hModule, wzRelativePath, pThemeElement, &pTheme->hImage);
@@ -2011,6 +1996,43 @@ LExit:
     ReleaseObject(pixn);
 
     return hr;
+}
+
+static BOOL GetDpiForMonitor(
+    __in HWND hWnd,
+    __out UINT* nDpiX,
+    __out UINT* nDpiY
+    )
+{
+    HMONITOR hMonitor = NULL;
+    MONITORINFOEXW mi;
+    HDC hdc = NULL;
+
+    hMonitor = ::MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+    if (hMonitor)
+    {
+        SecureZeroMemory(&mi, sizeof(mi));
+        mi.cbSize = sizeof(mi);
+
+        if (::GetMonitorInfoW(hMonitor, &mi))
+        {
+            hdc = ::CreateDCW(L"DISPLAY", mi.szDevice, NULL, NULL);
+            if (hdc)
+            {
+                *nDpiX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+                *nDpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+
+                ::ReleaseDC(NULL, hdc);
+
+                return TRUE;
+            }
+        }
+    }
+
+    *nDpiX = 96;
+    *nDpiY = 96;
+
+    return FALSE;
 }
 
 static int ScaleByFactor(
