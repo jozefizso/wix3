@@ -1707,8 +1707,8 @@ static HRESULT ParseTheme(
             }
         }
     }
-    pTheme->nScaleFactorX = dpiX / 96;
-    pTheme->nScaleFactorY = dpiY / 96;
+    pTheme->fScaleFactorX = dpiX / 96.0f;
+    pTheme->fScaleFactorY = dpiY / 96.0f;
 
     // Parse the optional background resource image.
     hr = ParseImage(hModule, wzRelativePath, pThemeElement, &pTheme->hImage);
@@ -2015,24 +2015,30 @@ LExit:
 
 static int ScaleByFactor(
     int pixels,
-    UINT nScaleFactor
+    FLOAT fScaleFactor
     )
 {
-    return pixels * nScaleFactor;
+    if (pixels == -1)
+    {
+        return pixels;
+    }
+
+    auto x = pixels * fScaleFactor;
+    return static_cast<int>(x);
 }
 
 static void ScaleApplication(
     __in THEME* pTheme
     )
 {
-    pTheme->nWidth = ScaleByFactor(pTheme->nWidth, pTheme->nScaleFactorX);
-    pTheme->nHeight = ScaleByFactor(pTheme->nHeight, pTheme->nScaleFactorY);
+    pTheme->nWidth = ScaleByFactor(pTheme->nWidth, pTheme->fScaleFactorX);
+    pTheme->nHeight = ScaleByFactor(pTheme->nHeight, pTheme->fScaleFactorY);
 
-    pTheme->nMinimumWidth = ScaleByFactor(pTheme->nMinimumWidth, pTheme->nScaleFactorX);
-    pTheme->nMinimumHeight = ScaleByFactor(pTheme->nMinimumHeight, pTheme->nScaleFactorY);
+    pTheme->nMinimumWidth = ScaleByFactor(pTheme->nMinimumWidth, pTheme->fScaleFactorX);
+    pTheme->nMinimumHeight = ScaleByFactor(pTheme->nMinimumHeight, pTheme->fScaleFactorY);
 
-    pTheme->nSourceX = ScaleByFactor(pTheme->nSourceX, pTheme->nScaleFactorX);
-    pTheme->nSourceY = ScaleByFactor(pTheme->nSourceY, pTheme->nScaleFactorY);
+    pTheme->nSourceX = ScaleByFactor(pTheme->nSourceX, pTheme->fScaleFactorX);
+    pTheme->nSourceY = ScaleByFactor(pTheme->nSourceY, pTheme->fScaleFactorY);
 }
 
 static void ScaleControl(
@@ -2040,14 +2046,14 @@ static void ScaleControl(
     __in THEME_CONTROL* pControl
     )
 {
-    pControl->nX = ScaleByFactor(pControl->nX, pTheme->nScaleFactorX);
-    pControl->nY = ScaleByFactor(pControl->nY, pTheme->nScaleFactorY);
+    pControl->nX = ScaleByFactor(pControl->nX, pTheme->fScaleFactorX);
+    pControl->nY = ScaleByFactor(pControl->nY, pTheme->fScaleFactorY);
 
-    pControl->nWidth = ScaleByFactor(pControl->nWidth, pTheme->nScaleFactorX);
-    pControl->nHeight = ScaleByFactor(pControl->nHeight, pTheme->nScaleFactorY);
+    pControl->nWidth = ScaleByFactor(pControl->nWidth, pTheme->fScaleFactorX);
+    pControl->nHeight = ScaleByFactor(pControl->nHeight, pTheme->fScaleFactorY);
 
-    pControl->nSourceX = ScaleByFactor(pControl->nSourceX, pTheme->nScaleFactorX);
-    pControl->nSourceY = ScaleByFactor(pControl->nSourceY, pTheme->nScaleFactorY);
+    pControl->nSourceX = ScaleByFactor(pControl->nSourceX, pTheme->fScaleFactorX);
+    pControl->nSourceY = ScaleByFactor(pControl->nSourceY, pTheme->fScaleFactorY);
 }
 
 static void ScaleFont(
@@ -2057,7 +2063,7 @@ static void ScaleFont(
 {
     if (lf->lfHeight < 0)
     {
-        lf->lfHeight = ScaleByFactor(lf->lfHeight, pTheme->nScaleFactorX);
+        lf->lfHeight = ScaleByFactor(lf->lfHeight, pTheme->fScaleFactorX);
     }
 }
 

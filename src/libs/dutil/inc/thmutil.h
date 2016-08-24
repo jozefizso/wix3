@@ -181,13 +181,13 @@ struct THEME
     HWND hwndHover; // current hwnd hovered over
 
     // DPI scaling
-    UINT nScaleFactorX;
-    UINT nScaleFactorY;
+    FLOAT fScaleFactorX;
+    FLOAT fScaleFactorY;
 };
 
 static int ScaleByFactor(
     int pixels,
-    UINT nScaleFactor
+    FLOAT fScaleFactor
 );
 
 
