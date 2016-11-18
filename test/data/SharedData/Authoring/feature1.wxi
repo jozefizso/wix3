@@ -2,3 +2,12 @@
 <!-- Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information. -->
 
 
+<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <?include $(env.WIX_ROOT)\test\data\SharedData\Authoring\component1.wxi?>
+
+  <Feature Id="Feature1" Level="1">
+    <ComponentRef Id="Component1" />
+  </Feature>
+
+</Include>
