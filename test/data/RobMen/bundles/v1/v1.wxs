@@ -13,7 +13,7 @@
         UpgradeCode="85BDF55F-C789-4D0C-97AA-B844CD51035D"
         Condition='Privileged'>
 
-   <swid:Tag Regid="regid.1991-06.microsoft.com" />
+   <swid:Tag Regid="microsoft.com" InstallPath="[ProgramFiles64Folder]~Bv1 Folder\" />
 
    <BootstrapperApplicationRef Id='WixStandardBootstrapperApplication.HyperlinkLicense'>
      <bal:WixStandardBootstrapperApplication LicenseUrl='http://robmensching.com/blog/' />

@@ -11,7 +11,7 @@
   <Bundle Name="~$(var.TestName) - Bundle A" Version="$(var.Version)" UpgradeCode="79AD11BA-2CA3-4F35-8907-F2EF87413BD7">
     <Log Prefix="~$(var.TestName)_BundleA"/>
 
-    <swid:Tag Regid="regid.1995-08.com.example" />
+    <swid:Tag Regid="example.com" InstallPath="[ProgramFilesFolder]~Test WiX" />
 
     <Variable Name="TestName" Value="$(var.TestName)" />
 

@@ -11,7 +11,7 @@
   <Bundle Name="~$(var.TestName) - Patch Bundle C" Version="$(var.Version)" UpgradeCode="D5706E81-BE87-42A2-B0E7-F73D8215F1A4">
     <Log Prefix="~$(var.TestName)_PatchBundleC"/>
 
-    <swid:Tag Regid="regid.1995-08.com.example" Type="patch" />
+    <swid:Tag Regid="example.com" Type="patch" InstallPath="[ProgramFilesFolder]~Test WiX" />
 
     <Variable Name="TestName" Value="$(var.TestName)" />
 

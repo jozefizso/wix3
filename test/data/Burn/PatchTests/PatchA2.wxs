@@ -14,7 +14,7 @@
         </Media>
 
         <PatchFamily Id="A2" Version="$(var.Version)" Supersede="yes">
-          <swid:TagRef Regid="regid.1995-08.com.example" />
+          <swid:TagRef Regid="example.com" />
 
           <ComponentRef Id="RegistryComponent2"/>
         </PatchFamily>

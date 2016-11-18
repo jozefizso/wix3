@@ -242,8 +242,8 @@ namespace WixTest.Tests.Burn
 
         private static string GetTagVersion(string tagName)
         {
-            string regidFolder = System.Environment.ExpandEnvironmentVariables(@"%ProgramData%\regid.1995-08.com.example");
-            string tagPath = Path.Combine(regidFolder, "regid.1995-08.com.example " + tagName + ".swidtag");
+            string regidFolder = System.Environment.ExpandEnvironmentVariables(@"%ProgramData%\example.com");
+            string tagPath = Path.Combine(regidFolder, "example.com " + tagName + ".swidtag");
             string version = null;
 
             if (File.Exists(tagPath))
