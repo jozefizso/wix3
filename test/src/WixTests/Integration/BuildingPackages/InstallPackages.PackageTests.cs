@@ -205,8 +205,8 @@ namespace WixTest.Tests.Integration.BuildingPackages.InstallPackages
             candle.Run();
 
             Light light = new Light(candle);
-            light.ExpectedExitCode = 216;
-            light.ExpectedWixMessages.Add(new WixMessage(216, "An unexpected Win32 exception with error code 0x64D occurred: This installation package cannot be installed by the Windows Installer service. You must install a Windows service pack that contains a newer version of the Windows Installer service", WixMessage.MessageTypeEnum.Error));
+            light.ExpectedExitCode = 350;
+            light.ExpectedWixMessages.Add(new WixMessage(350, "The package being validated requires a higher version of Windows Installer than is installed on this machine. Validation cannot continue.", WixMessage.MessageTypeEnum.Error));
             light.Run();
         }
 
