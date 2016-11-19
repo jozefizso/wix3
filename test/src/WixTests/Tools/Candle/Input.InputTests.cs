@@ -56,7 +56,7 @@ namespace WixTest.Tests.Tools.Candle.Input
         {
             Candle candle = new Candle();
             candle.SourceFiles.Add(Path.Combine(InputTests.TestDataDirectory, @"InvalidWxsFile\Product.wxs"));
-            candle.ExpectedWixMessages.Add(new WixMessage(104, "Not a valid source file; detail: Data at the root level is invalid. Line 1, position 1.", WixMessage.MessageTypeEnum.Error));
+            candle.ExpectedWixMessages.Add(new WixMessage(104, "Not a valid source file; detail: Data at the root level is invalid. Line 5, position 1.", WixMessage.MessageTypeEnum.Error));
             candle.ExpectedExitCode = 104;
             candle.Run();
         }
