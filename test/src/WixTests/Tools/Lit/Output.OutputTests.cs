@@ -89,7 +89,7 @@ namespace WixTest.Tests.Tools.Lit.Output
             lit.ObjectFiles.Add(Candle.Compile(WixTests.PropertyFragmentWxs));
             lit.OutputFile = "testfile\\\"wixobj";
             lit.SetOutputFileIfNotSpecified = false;
-            string expectedOutput = string.Format("Your file or directory path '{0}' cannot contain a quote. Quotes are often accidentally introduced when trying to refer to a directory path with spaces in it, such as \"C:\\Out Directory\\\".  The correct representation for that path is: \"C:\\Out Directory\\\\\".", "testfile\"wixobj");
+            string expectedOutput = string.Format("Path '{0}' contains a literal quote character. Quotes are often accidentally introduced when trying to refer to a directory path with spaces in it, such as \"C:\\Out Directory\\\" -- the backslash before the quote acts an escape character. The correct representation for that path is: \"C:\\Out Directory\\\\\".", "testfile\"wixobj");
             lit.ExpectedWixMessages.Add(new WixMessage(117, expectedOutput, WixMessage.MessageTypeEnum.Error));
             lit.ExpectedExitCode = 117;
             lit.Run();
