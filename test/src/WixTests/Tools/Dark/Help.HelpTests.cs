@@ -18,7 +18,7 @@ namespace WixTest.Tests.Tools.Dark.Help
             Dark dark = new Dark();
             dark.Help = true;
 
-            dark.ExpectedOutputStrings.Add("usage: dark.exe [-?] [-nologo] database.msi [source.wxs]");
+            dark.ExpectedOutputStrings.Add("usage: dark.exe [-?] [-nologo] database.msi [source.wxs] [@responseFile]");
             dark.ExpectedOutputStrings.Add("-ext <extension>  extension assembly or \"class, assembly\"");
             dark.ExpectedOutputStrings.Add("-nologo    skip printing dark logo information");
             dark.ExpectedOutputStrings.Add("-notidy    do not delete temporary files (useful for debugging)");
@@ -26,22 +26,22 @@ namespace WixTest.Tests.Tools.Dark.Help
             dark.ExpectedOutputStrings.Add("-sct       suppress decompiling custom tables");
             dark.ExpectedOutputStrings.Add("-sdet      suppress dropping empty tables (adds EnsureTable as appropriate)");
             dark.ExpectedOutputStrings.Add("-sras      suppress relative action sequencing");
-            dark.ExpectedOutputStrings.Add("(use explicit sequence numbers)");
+            dark.ExpectedOutputStrings.Add("           (use explicit sequence numbers)");
             dark.ExpectedOutputStrings.Add("-sui       suppress decompiling UI-related tables");
             dark.ExpectedOutputStrings.Add("-sw[N]     suppress all warnings or a specific message ID");
-            dark.ExpectedOutputStrings.Add("(example: -sw1059 -sw1067)");
+            dark.ExpectedOutputStrings.Add("           (example: -sw1059 -sw1067)");
             dark.ExpectedOutputStrings.Add("-swall     suppress all warnings (deprecated)");
             dark.ExpectedOutputStrings.Add("-v         verbose output");
             dark.ExpectedOutputStrings.Add("-wx[N]     treat all warnings or a specific message ID as an error");
-            dark.ExpectedOutputStrings.Add("(example: -wx1059 -wx1067)");
+            dark.ExpectedOutputStrings.Add("           (example: -wx1059 -wx1067)");
             dark.ExpectedOutputStrings.Add("-wxall     treat all warnings as errors (deprecated)");
             dark.ExpectedOutputStrings.Add("-x <path>  export binaries from cabinets and embedded binaries to <path>");
             dark.ExpectedOutputStrings.Add("-xo        output wixout instead of WiX source code");
-            dark.ExpectedOutputStrings.Add("(mandatory for transforms and patches)");
+            dark.ExpectedOutputStrings.Add("           (mandatory for transforms and patches)");
             dark.ExpectedOutputStrings.Add("-? | -help this help information");
             dark.ExpectedOutputStrings.Add("Environment variables:");
-            dark.ExpectedOutputStrings.Add("WIX_TEMP   overrides the temporary directory used for cab extraction, binary extraction, ...");
-            dark.ExpectedOutputStrings.Add("For more information see: http://wix.sourceforge.net");
+            dark.ExpectedOutputStrings.Add("   WIX_TEMP   overrides the temporary directory used for cab extraction, binary extraction, ...");
+            dark.ExpectedOutputStrings.Add("For more information see: http://wixtoolset.org/");
 
             dark.Run();
         }
