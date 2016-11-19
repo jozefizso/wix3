@@ -16,7 +16,7 @@
       
       <DirectoryRef Id="WixTestFolder">
         <Component Id="MyComponent" DiskId="1" Guid="!(wix.componentguid)">
-          <File Source="$(env.WIX_ROOT)\examples\data\test.txt" KeyPath="yes" />
+          <File Source="$(env.WIX_ROOT)\test\data\SharedData\Files\TextFile1.txt" KeyPath="yes" />
         </Component>
       </DirectoryRef>
 
