@@ -27,6 +27,7 @@ namespace WixTest.Tests.Tools.Light.BindFiles
 
             Light light1 = new Light(candle, true);
             light1.BindFiles = true;
+            light1.ExpectedWixMessages.Add(new WixMessage(1108, "The command line switch 'bf' is deprecated.", Message.MessageTypeEnum.Warning));
             light1.Run();
 
             // Verify that TextFile1 was not created in the layout location
