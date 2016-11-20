@@ -46,8 +46,8 @@ namespace WixTest
             if (String.IsNullOrEmpty(Settings.WixToolsDirectory))
             {
                 throw new ArgumentException(
-                    "{0} must be initialized to the WiX tools directory. Use '.' to specify the current directory.",
-                    "WixTest.Settings.WixToolDirectory");
+                    "Settings.WixToolDirectory must be initialized to the WiX tools directory. Use '.' to specify the current directory.",
+                    "toolDirectory");
             }
         }
 
@@ -208,7 +208,7 @@ namespace WixTest
                 }
                 else if (i >= actualWixMessages.Count || 0 != WixMessage.Compare(actualWixMessages[i], this.ExpectedWixMessages[i], ignoreText))
                 {
-                    errors.Add(String.Format("Ordered WixMessage verification failed when trying to find the expected message {0}", expectedWixMessages[i]));
+                    errors.Add(String.Format("Ordered WixMessage verification failed when trying to find the expected message:\n{0}", expectedWixMessages[i]));
                     break;
                 }
                 else
@@ -225,7 +225,7 @@ namespace WixTest
                 {
                     if (null != actualWixMessage)
                     {
-                        errors.Add(String.Format("Found an unexpected message: {0}", actualWixMessage.ToString()));
+                        errors.Add(String.Format("Found an unexpected message:\n{0}", actualWixMessage.ToString()));
                     }
                 }
             }

@@ -1,5 +1,8 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information.
 
+using System.Runtime.CompilerServices;
+using Xunit.Extensions;
+
 namespace WixTest.Tests.Tools.Common.Logo
 {
     using System;
@@ -14,86 +17,86 @@ namespace WixTest.Tests.Tools.Common.Logo
     /// </summary>
     public class LogoTests : WixTests
     {
-        private static readonly string LogoOutputRegexString = @"Microsoft \(R\) Windows Installer Xml {0} version 3\.6\.\d\d\d\d.0" + Environment.NewLine + @"Copyright \(C\) Microsoft Corporation\. All rights reserved\.";
-        private List<WixTool> wixTools;
-        
-        protected override void TestInitialize()
-        {
-            base.TestInitialize();
+        private static readonly string LogoOutputRegexString = @"Windows\ Installer\ XML\ Toolset\ {0}\ version\ 3\.\d+\.\d+.\d+" + Environment.NewLine + Regex.Escape("Copyright (c) .NET Foundation and contributors. All rights reserved.");
 
-            wixTools = new List<WixTool>();
-            wixTools.Add(new Candle());
-            wixTools.Add(new Dark());
-            wixTools.Add(new Light());
-            wixTools.Add(new Lit());
-            wixTools.Add(new Pyro());
-            wixTools.Add(new Smoke());
-            wixTools.Add(new Torch());
-        }
-
-        [NamedFact]
-        [Description("Verify that different Wix tools print the Logo information.")]
-        [Priority(2)]
-        public void PrintLogo()
+        public static IEnumerable<object[]> WixToolsData
         {
-            foreach (WixTool wixTool in this.wixTools)
+            get
             {
-                wixTool.NoLogo = false;
-                wixTool.SetOutputFileIfNotSpecified = false;
-                wixTool.ExpectedOutputRegexs.Add(new Regex(string.Format(LogoTests.LogoOutputRegexString, Regex.Escape(wixTool.ToolDescription))));
-                wixTool.Run();
+                // force call to static WixTestBase() constructor to ensure Settings.WixToolsDirectory is set
+                RuntimeHelpers.RunClassConstructor(typeof(WixTestBase).TypeHandle);
+
+                return new[]
+                {
+                    new object[] {new Candle()},
+                    new object[] {new Dark()},
+                    new object[] {new Light()},
+                    new object[] {new Lit()},
+                    new object[] {new Pyro()},
+                    new object[] {new Smoke()},
+                    new object[] {new Torch()}
+                };
             }
         }
 
-        [NamedFact]
+        [Description("Verify that different Wix tools print the Logo information.")]
+        [Priority(2)]
+        [Theory]
+        [PropertyData(nameof(WixToolsData))]
+        public void PrintLogo(WixTool wixTool)
+        {
+            wixTool.NoLogo = false;
+            wixTool.SetOutputFileIfNotSpecified = false;
+            wixTool.ExpectedOutputRegexs.Add(new Regex(string.Format(LogoTests.LogoOutputRegexString, Regex.Escape(wixTool.ToolDescription))));
+            wixTool.Run();
+        }
+
         [Description("Verify that different Wix tools do not print the Logo information.")]
         [Priority(2)]
-        public void PrintWithoutLogo()
+        [Theory]
+        [PropertyData(nameof(WixToolsData))]
+        public void PrintWithoutLogo(WixTool wixTool)
         {
             bool missingLogo = false;
             string errorMessage = string.Empty;
 
-            foreach (WixTool wixTool in this.wixTools)
+            wixTool.NoLogo = true;
+            wixTool.SetOutputFileIfNotSpecified = false;
+
+            Result result = wixTool.Run();
+
+            Regex LogoOutputRegex = new Regex("(.)*" + string.Format(LogoTests.LogoOutputRegexString, Regex.Escape(wixTool.ToolDescription)) + "(.)*");
+
+            if (LogoOutputRegex.IsMatch(result.StandardOutput))
             {
-                wixTool.NoLogo = true;
-                wixTool.SetOutputFileIfNotSpecified = false;
-
-                Result result = wixTool.Run();
-
-                Regex LogoOutputRegex = new Regex("(.)*" + string.Format(LogoTests.LogoOutputRegexString, Regex.Escape(wixTool.ToolDescription)) + "(.)*");
-
-                if (LogoOutputRegex.IsMatch(result.StandardOutput))
-                {
-                    missingLogo = true;
-                    errorMessage += string.Format("Wix Tool {0} prints the Logo information with -nolog set.{1}", wixTool.ToolDescription, Environment.NewLine);
-                }
+                missingLogo = true;
+                errorMessage += string.Format("Wix Tool {0} prints the Logo information with -nologo set.{1}", wixTool.ToolDescription, Environment.NewLine);
             }
 
             Assert.False(missingLogo, errorMessage);
         }
 
 
-        [NamedFact]
+        //[NamedFact]
         [Description("Verify that logo is printed before any other warnings/messages.")]
         [Priority(2)]
-        public void LogoPrintingOrder()
+        [Theory]
+        [PropertyData(nameof(WixToolsData))]
+        public void LogoPrintingOrder(WixTool wixTool)
         {
             bool missingLogo = false;
             string errorMessage = string.Empty;
 
-            foreach (WixTool wixTool in this.wixTools)
-            {
-                wixTool.NoLogo = false;
-                wixTool.SetOutputFileIfNotSpecified = false;
-                wixTool.OtherArguments = " -InvalidCommandLineArgument";
-                Result result = wixTool.Run();
-                Regex LogoOutputRegex = new Regex(string.Format(LogoTests.LogoOutputRegexString, Regex.Escape(wixTool.ToolDescription)) + "(.)*");
+            wixTool.NoLogo = false;
+            wixTool.SetOutputFileIfNotSpecified = false;
+            wixTool.OtherArguments = " -InvalidCommandLineArgument";
+            Result result = wixTool.Run();
+            Regex LogoOutputRegex = new Regex(string.Format(LogoTests.LogoOutputRegexString, Regex.Escape(wixTool.ToolDescription)) + "(.)*");
 
-                if (!LogoOutputRegex.IsMatch(result.StandardOutput))
-                {
-                    missingLogo = true;
-                    errorMessage += string.Format("Wix Tool {0} Logo information does not show as the first line with -nolog set.{1}", wixTool.ToolDescription, Environment.NewLine);
-                }
+            if (!LogoOutputRegex.IsMatch(result.StandardOutput))
+            {
+                missingLogo = true;
+                errorMessage += string.Format("Wix Tool {0} Logo information does not show as the first line with -nologo set.{1}", wixTool.ToolDescription, Environment.NewLine);
             }
 
             Assert.False(missingLogo, errorMessage);
