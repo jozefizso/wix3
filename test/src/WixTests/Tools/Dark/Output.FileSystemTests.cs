@@ -54,7 +54,7 @@ namespace WixTest.Tests.Tools.Dark.Output
             dark.InputFile = Path.Combine(WixTests.SharedBaselinesDirectory, @"MSIs\BasicProduct.msi");
             dark.OutputFile = string.Empty;
             dark.OtherArguments = " -out testfile\\\"msi";
-            string expectedOutput2 = string.Format("Your file or directory path '{0}' cannot contain a quote. Quotes are often accidentally introduced when trying to refer to a directory path with spaces in it, such as \"C:\\Out Directory\\\".  The correct representation for that path is: \"C:\\Out Directory\\\\\".", "testfile\"msi");
+            string expectedOutput2 = string.Format("Path '{0}' contains a literal quote character. Quotes are often accidentally introduced when trying to refer to a directory path with spaces in it, such as \"C:\\Out Directory\\\" -- the backslash before the quote acts an escape character. The correct representation for that path is: \"C:\\Out Directory\\\\\".", "testfile\"msi");
             dark.ExpectedWixMessages.Add(new WixMessage(117, expectedOutput2, WixMessage.MessageTypeEnum.Error));
             dark.ExpectedExitCode = 117;
             dark.Run();
