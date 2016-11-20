@@ -22,6 +22,8 @@ namespace WixTest.Tests.Tools.Candle.SuppressSchemaValidation
 
             // The authoring does not contain a package element which is normally a schema validation error
             candle.SuppressSchemaValidation = true;
+            candle.ExpectedWixMessages.Add(new WixMessage(1108, "The command line switch 'sfdvital' is deprecated.", WixMessage.MessageTypeEnum.Warning));
+            candle.ExpectedExitCode = 0;
             candle.Run();
        }
 
@@ -33,7 +35,7 @@ namespace WixTest.Tests.Tools.Candle.SuppressSchemaValidation
             Candle candle = new Candle();
             candle.SourceFiles.Add(testFile);
             candle.SuppressSchemaValidation = false;
-            candle.ExpectedWixMessages.Add(new WixMessage(107, "Schema validation failed with the following error at line 1, column 542: The element 'Product' in namespace 'http://schemas.microsoft.com/wix/2006/wi' has invalid child element 'Media' in namespace 'http://schemas.microsoft.com/wix/2006/wi'. List of possible elements expected: 'Package'.", WixMessage.MessageTypeEnum.Error));
+            candle.ExpectedWixMessages.Add(new WixMessage(107, "Schema validation failed with the following error at line 1, column 533: The element 'Product' in namespace 'http://schemas.microsoft.com/wix/2006/wi' has invalid child element 'Media' in namespace 'http://schemas.microsoft.com/wix/2006/wi'. List of possible elements expected: 'Package'.", WixMessage.MessageTypeEnum.Error));
             candle.ExpectedExitCode = 107;
             candle.Run();
         }
