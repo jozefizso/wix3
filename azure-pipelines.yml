@@ -15,11 +15,7 @@ steps:
   inputs:
     solution: 'tools\OneTimeWixBuildInitialization.proj'
     msbuildArguments: '/v:diag'
-    msbuildVersion: '15.0'
-    platform: 'AnyCPU'
     configuration: 'Release'
-    createLogFile: true
-    logFileVerbosity: 'diagnostic'
 
 - task: MSBuild@1
   displayName: Report build diagnostics information
