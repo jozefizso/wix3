@@ -5,13 +5,6 @@ pool:
 
 steps:
 - task: MSBuild@1
-  displayName: Report build diagnostics information
-  inputs:
-    solution: 'wix.proj'
-    msbuildArguments: '/t:Diagnostics'
-    logFileVerbosity: 'normal'
-
-- task: MSBuild@1
   displayName: Initialize build
   inputs:
     solution: 'tools\OneTimeWixBuildInitialization.proj'
@@ -19,7 +12,15 @@ steps:
     platform: 'AnyCPU'
     configuration: 'Release'
     createLogFile: true
+    logFileVerbosity: 'diagnostic'
+
+- task: MSBuild@1
+  displayName: Report build diagnostics information
+  inputs:
+    solution: 'wix.proj'
+    msbuildArguments: '/t:Diagnostics'
     logFileVerbosity: 'normal'
+
 
 - task: MSBuild@1
   displayName: Build wix3 toolset
