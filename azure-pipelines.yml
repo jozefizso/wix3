@@ -14,8 +14,7 @@ steps:
       Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A' -Name InstallationFolder
       Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0A' -Name InstallationFolder
       Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A' -Name InstallationFolder
-
-
+    errorActionPreference: 'continue'
 - task: MSBuild@1
   displayName: Initialize build
   inputs:
