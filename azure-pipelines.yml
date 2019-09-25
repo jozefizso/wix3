@@ -1,0 +1,27 @@
+# wix3 toolset build pipeline
+
+pool:
+  vmImage: 'vs2017-win2016'
+
+steps:
+- task: MSBuild@1
+  displayName: Initialize build
+  inputs:
+    solution: 'tools\OneTimeWixBuildInitialization.proj'
+    msbuildVersion: '15.0'
+    platform: 'AnyCPU'
+    configuration: 'Release'
+    msbuildArguments: '/t:Build'
+    createLogFile: true
+    logFileVerbosity: 'normal'
+
+- task: MSBuild@1
+  displayName: Build wix3 toolset
+  inputs:
+    solution: 'wix.proj'
+    msbuildVersion: '15.0'
+    platform: 'AnyCPU'
+    configuration: 'Release'
+    msbuildArguments: '/t:Build'
+    createLogFile: true
+    logFileVerbosity: 'normal'
