@@ -8,6 +8,7 @@ steps:
   displayName: Initialize build
   inputs:
     solution: 'tools\OneTimeWixBuildInitialization.proj'
+    msbuildArguments: '/v:diag'
     msbuildVersion: '15.0'
     platform: 'AnyCPU'
     configuration: 'Release'
