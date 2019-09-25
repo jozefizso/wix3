@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information. -->
+
+
+<Project DefaultTargets="Diagnostics" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <NetfxSdkInstallPath10A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath10A>
+    <NetfxSdkInstallPath462>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.2', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath462>
+    <NetfxSdkInstallPath461>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath461>
+    <NetfxSdkInstallPath81A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath81A>
+    <NetfxSdkInstallPath80A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath80A>
+    <NetfxSdkInstallPath70A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath70A>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NetfxSdkInstallPath>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
+    <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.2', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
+    <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
+    <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
+    <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
+    <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
+    <NetfxSdkInstallPath Condition=" !HasTrailingSlash('$(NetfxSdkInstallPath)') ">$(NetfxSdkInstallPath)\</NetfxSdkInstallPath>
+    <StrongNameSignFolder Condition=" Exists('$(NetfxSdkInstallPath)bin\NETFX 4.6.2 Tools\sn.exe') ">$(NetfxSdkInstallPath)bin\NETFX 4.6.2 Tools\</StrongNameSignFolder>
+    <StrongNameSignFolder Condition=" Exists('$(NetfxSdkInstallPath)bin\NETFX 4.6.1 Tools\sn.exe') ">$(NetfxSdkInstallPath)bin\NETFX 4.6.1 Tools\</StrongNameSignFolder>
+    <StrongNameSignFolder Condition=" Exists('$(NetfxSdkInstallPath)bin\NETFX 4.6 Tools\sn.exe') ">$(NetfxSdkInstallPath)bin\NETFX 4.6 Tools\</StrongNameSignFolder>
+    <StrongNameSignFolder Condition=" Exists('$(NetfxSdkInstallPath)bin\NETFX 4.5.1 Tools\sn.exe') ">$(NetfxSdkInstallPath)bin\NETFX 4.5.1 Tools\</StrongNameSignFolder>
+    <StrongNameSignFolder Condition=" Exists('$(NetfxSdkInstallPath)bin\NETFX 4.0 Tools\sn.exe') ">$(NetfxSdkInstallPath)bin\NETFX 4.0 Tools\</StrongNameSignFolder>
+    <StrongNameSignFolder Condition=" '$(StrongNameSignFolder)'=='' ">$(NetfxSdkInstallPath)bin\</StrongNameSignFolder>
+    <StrongNameSign64Folder Condition=" Exists('$(StrongNameSignFolder)x64\sn.exe') ">$(StrongNameSignFolder)x64\</StrongNameSign64Folder>
+  </PropertyGroup>
+
+  <!--
+  ================================================================================================
+  Diagnostics
+
+    Displays useful information for debugging WixBuild targets.
+
+  ================================================================================================
+  -->
+  <Target Name="Diagnostics">
+    <Message Importance="high" Text="NetfxSdkInstallPath10A = $(NetfxSdkInstallPath10A)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath462 = $(NetfxSdkInstallPath462)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath461 = $(NetfxSdkInstallPath461)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath81A = $(NetfxSdkInstallPath81A)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath80A = $(NetfxSdkInstallPath80A)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath = $(NetfxSdkInstallPath)" />
+    <Message Importance="high" Text="StrongNameSignFolder = $(StrongNameSignFolder)" />
+    <Message Importance="high" Text="StrongNameSign64Folder = $(StrongNameSign64Folder)" />
+  </Target>
+</Project>
