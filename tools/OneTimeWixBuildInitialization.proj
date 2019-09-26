@@ -13,6 +13,14 @@
   ================================================================================================
   -->
   <PropertyGroup>
+    <NetfxSdkInstallPath10A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath10A>
+    <NetfxSdkInstallPath462>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.2', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath462>
+    <NetfxSdkInstallPath461>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath461>
+    <NetfxSdkInstallPath81A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath81A>
+    <NetfxSdkInstallPath80A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath80A>
+    <NetfxSdkInstallPath70A>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath70A>
+  </PropertyGroup>
+  <PropertyGroup>
     <NetfxSdkInstallPath>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
     <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
     <NetfxSdkInstallPath Condition=" '$(NetfxSdkInstallPath)'=='' ">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.0A', 'InstallationFolder', null, RegistryView.Registry64, RegistryView.Registry32))</NetfxSdkInstallPath>
@@ -26,6 +34,12 @@
   </PropertyGroup>
   <Target
     Name="RegisterStrongNameSkip">
+    <Message Importance="high" Text="NetfxSdkInstallPath10A = $(NetfxSdkInstallPath10A)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath462 = $(NetfxSdkInstallPath462)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath461 = $(NetfxSdkInstallPath461)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath81A = $(NetfxSdkInstallPath81A)" />
+    <Message Importance="high" Text="NetfxSdkInstallPath80A = $(NetfxSdkInstallPath80A)" />
+    
     <Message Importance="high" Text="NetfxSdkInstallPath = $(NetfxSdkInstallPath)" />
     <Message Importance="high" Text="StrongNameSignFolder = $(StrongNameSignFolder)" />
     <Message Importance="high" Text="StrongNameSign64Folder = $(StrongNameSign64Folder)" />
