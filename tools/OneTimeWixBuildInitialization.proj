@@ -26,6 +26,9 @@
   </PropertyGroup>
   <Target
     Name="RegisterStrongNameSkip">
+    <Message Importance="high" Text="NetfxSdkInstallPath = $(NetfxSdkInstallPath)" />
+    <Message Importance="high" Text="StrongNameSignFolder = $(StrongNameSignFolder)" />
+    <Message Importance="high" Text="StrongNameSign64Folder = $(StrongNameSign64Folder)" />
 
     <Error Text="Could not find sn.exe. Expected to find it at: $(StrongNameSignFolder)sn.exe" Condition=" !Exists('$(StrongNameSignFolder)sn.exe') " />
 
