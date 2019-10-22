@@ -1787,8 +1787,8 @@ static HRESULT ParseImage(
     // If there is an image, convert it into a bitmap handle.
     if (pBitmap)
     {
-        Gdiplus::Color black;
-        Gdiplus::Status gs = pBitmap->GetHBITMAP(black, phImage);
+        Gdiplus::Color white (255, 255, 255, 255);
+        Gdiplus::Status gs = pBitmap->GetHBITMAP(white, phImage);
         ExitOnGdipFailure(gs, hr, "Failed to convert GDI+ bitmap into HBITMAP.");
     }
 
