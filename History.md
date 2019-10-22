@@ -1,3 +1,7 @@
+## WixBuild: Version 3.11.x-dev
+
+* HeathS: WIXBUG:4541 - Add support for high DPI to the Burn engine
+
 ## WixBuild: Version 3.11.2.4516
 
 * HeathS: Add support for .NET Foundation signing service
