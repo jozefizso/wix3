@@ -1394,6 +1394,7 @@ private: // privates
 
         hr = ThemeLoadFromFile(sczThemePath, &m_pTheme);
         BalExitOnFailure1(hr, "Failed to load theme from path: %ls", sczThemePath);
+        BalLog(BOOTSTRAPPER_LOG_LEVEL_STANDARD, "Primary monitor DPI configuration: ScaleFactorX=%.2f, ScaleFactorY=%.2f", m_pTheme->fScaleFactorX, m_pTheme->fScaleFactorY);
 
         hr = ThemeLocalize(m_pTheme, m_pWixLoc);
         BalExitOnFailure1(hr, "Failed to localize theme: %ls", sczThemePath);
