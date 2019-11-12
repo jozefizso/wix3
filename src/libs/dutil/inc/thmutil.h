@@ -181,6 +181,7 @@ struct THEME
     HWND hwndHover; // current hwnd hovered over
 
     // DPI scaling
+    UINT nDpiX;
     FLOAT fScaleFactorX;
     FLOAT fScaleFactorY;
 };

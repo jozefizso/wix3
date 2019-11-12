@@ -57,6 +57,7 @@ static HRESULT ParseImage(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pElement,
+    __in THEME* pTheme,
     __out HBITMAP* phImage
     );
 static HRESULT ParseApplication(
@@ -100,6 +101,7 @@ static HRESULT ParseBillboards(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pixn,
+    __in THEME* pTheme,
     __in THEME_CONTROL* pControl
     );
 static HRESULT ParseColumns(
@@ -1685,11 +1687,12 @@ static HRESULT ParseTheme(
     pTheme->wId = ++wThemeId;
 
     GetDpiForMonitor(NULL, &nDpiX, &nDpiY);
+    pTheme->nDpiX = nDpiX;
     pTheme->fScaleFactorX = GetScaleFactorForDpi(nDpiX);
     pTheme->fScaleFactorY = GetScaleFactorForDpi(nDpiY);
 
     // Parse the optional background resource image.
-    hr = ParseImage(hModule, wzRelativePath, pThemeElement, &pTheme->hImage);
+    hr = ParseImage(hModule, wzRelativePath, pThemeElement, pTheme, &pTheme->hImage);
     ExitOnFailure(hr, "Failed while parsing theme image.");
 
     // Parse the optional window style.
@@ -1738,11 +1741,14 @@ static HRESULT ParseImage(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pElement,
+    __in THEME* pTheme,
     __out HBITMAP* phImage
     )
 {
     HRESULT hr = S_OK;
     BSTR bstr = NULL;
+    LPWSTR sczDpiFolder = NULL;
+    LPWSTR sczDpiFolderPath = NULL;
     LPWSTR sczImageFile = NULL;
     int iResourceId = 0;
     Gdiplus::Bitmap* pBitmap = NULL;
@@ -1770,8 +1776,22 @@ static HRESULT ParseImage(
         {
             if (wzRelativePath)
             {
-                hr = PathConcat(wzRelativePath, bstr, &sczImageFile);
-                ExitOnFailure(hr, "Failed to combine image file path.");
+                hr = StrAllocFormatted(&sczDpiFolder, L"dpi%i", pTheme->nDpiX);
+                ExitOnFailure(hr, "Failed to get dpi folder value.");
+
+                hr = PathConcat(wzRelativePath, sczDpiFolder, &sczDpiFolderPath);
+                ExitOnFailure(hr, "Failed to combine DPI folder path.");
+
+                hr = PathConcat(sczDpiFolderPath, bstr, &sczImageFile);
+                ExitOnFailure(hr, "Failed to combine DPI image file path.");
+
+                if (!FileExistsEx(sczImageFile, NULL))
+                {
+                    ReleaseNullStr(sczImageFile);
+
+                    hr = PathConcat(wzRelativePath, bstr, &sczImageFile);
+                    ExitOnFailure(hr, "Failed to combine image file path.");
+                }
             }
             else
             {
@@ -1800,6 +1820,8 @@ LExit:
         delete pBitmap;
     }
 
+    ReleaseStr(sczDpiFolder);
+    ReleaseStr(sczDpiFolderPath);
     ReleaseStr(sczImageFile);
     ReleaseBSTR(bstr);
 
@@ -2276,7 +2298,7 @@ static HRESULT ParseImageLists(
                     ::DeleteObject(hBitmap);
                     hBitmap = NULL;
                 }
-                hr = ParseImage(hModule, wzRelativePath, pixnImage, &hBitmap);
+                hr = ParseImage(hModule, wzRelativePath, pixnImage, pTheme, &hBitmap);
                 ExitOnFailure(hr, "Failed to parse image: %u", i);
 
                 if (0 == i)
@@ -2576,7 +2598,7 @@ static HRESULT ParseControl(
     ExitOnFailure(hr, "Failed to find control width attribute.");
 
     // Parse the optional background resource image.
-    hr = ParseImage(hModule, wzRelativePath, pixn, &pControl->hImage);
+    hr = ParseImage(hModule, wzRelativePath, pixn, pTheme, &pControl->hImage);
     ExitOnFailure(hr, "Failed while parsing control image.");
 
     hr = XmlGetAttributeNumber(pixn, L"SourceX", reinterpret_cast<DWORD*>(&pControl->nSourceX));
@@ -2735,7 +2757,7 @@ static HRESULT ParseControl(
         }
         ExitOnFailure(hr, "Failed to get Billboard/@Interval.");
 
-        hr = ParseBillboards(hModule, wzRelativePath, pixn, pControl);
+        hr = ParseBillboards(hModule, wzRelativePath, pixn, pTheme, pControl);
         ExitOnFailure(hr, "Failed to parse billboards.");
     }
     else if (THEME_CONTROL_TYPE_TEXT == type)
@@ -2900,6 +2922,7 @@ static HRESULT ParseBillboards(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pixn,
+    __in THEME* pTheme,
     __in THEME_CONTROL* pControl
     )
 {
@@ -2927,7 +2950,7 @@ static HRESULT ParseBillboards(
         i = 0;
         while (S_OK == (hr = XmlNextElement(pixnl, &pixnChild, NULL)))
         {
-            hr = ParseImage(hModule, wzRelativePath, pixnChild, &pControl->ptbBillboards[i].hImage);
+            hr = ParseImage(hModule, wzRelativePath, pixnChild, pTheme, &pControl->ptbBillboards[i].hImage);
             ExitOnFailure(hr, "Failed to get billboard image.");
 
             hr = XmlGetText(pixnChild, &bstrText);
@@ -3217,10 +3240,15 @@ static HRESULT DrawImage(
     __in const THEME_CONTROL* pControl
     )
 {
+    BITMAP bm = {};
+
     DWORD dwHeight = pdis->rcItem.bottom - pdis->rcItem.top;
     DWORD dwWidth = pdis->rcItem.right - pdis->rcItem.left;
     int nSourceX = pControl->hImage ? 0 : pControl->nSourceX;
     int nSourceY = pControl->hImage ? 0 : pControl->nSourceY;
+
+    DWORD dwSourceHeight = dwHeight;
+    DWORD dwSourceWidth = dwWidth;
 
     BLENDFUNCTION bf = { };
     bf.BlendOp = AC_SRC_OVER;
@@ -3229,12 +3257,18 @@ static HRESULT DrawImage(
 
     HDC hdcMem = ::CreateCompatibleDC(pdis->hDC);
     HBITMAP hDefaultBitmap = static_cast<HBITMAP>(::SelectObject(hdcMem, pControl->hImage ? pControl->hImage : pTheme->hImage));
+    
+    if (pControl->hImage && ::GetObjectW(pControl->hImage, sizeof(BITMAP), &bm) > 0)
+    {
+        dwSourceWidth = bm.bmWidth;
+        dwSourceHeight = bm.bmHeight;
+    }
 
     // Try to draw the image with transparency and if that fails (usually because the image has no
     // alpha channel) then draw the image as is.
-    if (!::AlphaBlend(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwWidth, dwHeight, bf))
+    if (!::AlphaBlend(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwSourceWidth, dwSourceHeight, bf))
     {
-        ::StretchBlt(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwWidth, dwHeight, SRCCOPY);
+        ::StretchBlt(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwSourceWidth, dwSourceHeight, SRCCOPY);
     }
 
     ::SelectObject(hdcMem, hDefaultBitmap);
