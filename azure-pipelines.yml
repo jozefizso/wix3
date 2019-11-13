@@ -24,3 +24,9 @@ steps:
   inputs:
     solution: 'wix.proj'
     msbuildArguments: '/t:Build'
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish wix3 package
+  inputs:
+    pathToPublish: '$(Build.SourcesDirectory)/build/ship/x86'
+    artifactName: 'wix3_$(Configuration)_build$(Build.BuildId).zip'
