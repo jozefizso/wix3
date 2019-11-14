@@ -1,0 +1,32 @@
+# wix3 toolset build pipeline
+
+pool:
+  vmImage: 'vs2017-win2016'
+
+variables:
+  Configuration: 'Release'
+  XPDeprecationWarning: 'False'
+
+steps:
+- task: MSBuild@1
+  displayName: Initialize build
+  inputs:
+    solution: 'tools\OneTimeWixBuildInitialization.proj'
+
+- task: MSBuild@1
+  displayName: Report build diagnostics information
+  inputs:
+    solution: 'wix.proj'
+    msbuildArguments: '/t:Diagnostics'
+
+- task: MSBuild@1
+  displayName: Build wix3 toolset
+  inputs:
+    solution: 'wix.proj'
+    msbuildArguments: '/t:Build'
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish wix3 package
+  inputs:
+    pathToPublish: '$(Build.SourcesDirectory)/build/ship/x86'
+    artifactName: 'wix3_$(Configuration)_build$(Build.BuildId).zip'
