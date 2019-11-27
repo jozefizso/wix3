@@ -2299,6 +2299,11 @@ private: // privates
         if (BOOTSTRAPPER_DISPLAY_NONE < m_command.display)
         {
             ::ShowWindow(m_pTheme->hwndParent, SW_SHOW);
+
+            // this is bug fix for Microsoft Edge which does not run downloaded
+            // applications in the foreground so users can miss the installer was opened
+            ::BringWindowToTop(m_pTheme->hwndParent);
+            ::SetForegroundWindow(m_pTheme->hwndParent);
         }
 
         m_pEngine->CloseSplashScreen();
