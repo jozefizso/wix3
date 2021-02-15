@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information.
 
 #include "precomp.h"
+#include <cmath>
 
 #ifndef BCM_SETSHIELD
 #define BCM_SETSHIELD       (BCM_FIRST + 0x000C)
@@ -56,6 +57,7 @@ static HRESULT ParseImage(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pElement,
+    __in THEME* pTheme,
     __out HBITMAP* phImage
     );
 static HRESULT ParseApplication(
@@ -99,6 +101,7 @@ static HRESULT ParseBillboards(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pixn,
+    __in THEME* pTheme,
     __in THEME_CONTROL* pControl
     );
 static HRESULT ParseColumns(
@@ -208,6 +211,18 @@ static void GetControlDimensions(
 static HRESULT SizeListViewColumns(
     __inout THEME_CONTROL* pControl
     );
+// DPI scaling functions
+static void ScaleApplication(
+    __in THEME* pTheme
+    );
+static void ScaleControl(
+    __in const THEME* pTheme,
+    __in THEME_CONTROL* pControl
+    );
+static void ScaleFont(
+    __in const THEME* pTheme,
+    __in LOGFONTW* lf
+    );
 
 DAPI_(HRESULT) ThemeInitialize(
     __in_opt HMODULE hModule
@@ -243,8 +258,8 @@ DAPI_(HRESULT) ThemeInitialize(
     // Initialize GDI+ and common controls.
     vgsi.SuppressBackgroundThread = TRUE;
 
-    Gdiplus::Status gdiStatus = Gdiplus::GdiplusStartup(&vgdiToken, &vgsi, &vgso);
-    ExitOnGdipFailure(gdiStatus, hr, "Failed to initialize GDI+.");
+    hr = GdipInitialize(&vgsi, &vgdiToken, &vgso);
+    ExitOnFailure(hr, "Failed to initialize GDI+.");
 
     icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
     icex.dwICC = ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS | ICC_LISTVIEW_CLASSES | ICC_TREEVIEW_CLASSES | ICC_TAB_CLASSES | ICC_LINK_CLASS;
@@ -273,7 +288,7 @@ DAPI_(void) ThemeUninitialize()
 
     if (vgdiToken)
     {
-        Gdiplus::GdiplusShutdown(vgdiToken);
+        GdipUninitialize(vgdiToken);
         vgdiToken = 0;
     }
 
@@ -1660,6 +1675,9 @@ static HRESULT ParseTheme(
     THEME* pTheme = NULL;
     IXMLDOMElement *pThemeElement = NULL;
 
+    UINT nDpiX;
+    UINT nDpiY;
+
     hr = pixd->get_documentElement(&pThemeElement);
     ExitOnFailure(hr, "Failed to get theme element.");
 
@@ -1668,8 +1686,13 @@ static HRESULT ParseTheme(
 
     pTheme->wId = ++wThemeId;
 
+    GetDpiForMonitor(NULL, &nDpiX, &nDpiY);
+    pTheme->nDpiX = nDpiX;
+    pTheme->fScaleFactorX = GetScaleFactorForDpi(nDpiX);
+    pTheme->fScaleFactorY = GetScaleFactorForDpi(nDpiY);
+
     // Parse the optional background resource image.
-    hr = ParseImage(hModule, wzRelativePath, pThemeElement, &pTheme->hImage);
+    hr = ParseImage(hModule, wzRelativePath, pThemeElement, pTheme, &pTheme->hImage);
     ExitOnFailure(hr, "Failed while parsing theme image.");
 
     // Parse the optional window style.
@@ -1718,11 +1741,14 @@ static HRESULT ParseImage(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pElement,
+    __in THEME* pTheme,
     __out HBITMAP* phImage
     )
 {
     HRESULT hr = S_OK;
     BSTR bstr = NULL;
+    LPWSTR sczDpiFolder = NULL;
+    LPWSTR sczDpiFolderPath = NULL;
     LPWSTR sczImageFile = NULL;
     int iResourceId = 0;
     Gdiplus::Bitmap* pBitmap = NULL;
@@ -1750,8 +1776,22 @@ static HRESULT ParseImage(
         {
             if (wzRelativePath)
             {
-                hr = PathConcat(wzRelativePath, bstr, &sczImageFile);
-                ExitOnFailure(hr, "Failed to combine image file path.");
+                hr = StrAllocFormatted(&sczDpiFolder, L"dpi%i", pTheme->nDpiX);
+                ExitOnFailure(hr, "Failed to get dpi folder value.");
+
+                hr = PathConcat(wzRelativePath, sczDpiFolder, &sczDpiFolderPath);
+                ExitOnFailure(hr, "Failed to combine DPI folder path.");
+
+                hr = PathConcat(sczDpiFolderPath, bstr, &sczImageFile);
+                ExitOnFailure(hr, "Failed to combine DPI image file path.");
+
+                if (!FileExistsEx(sczImageFile, NULL))
+                {
+                    ReleaseNullStr(sczImageFile);
+
+                    hr = PathConcat(wzRelativePath, bstr, &sczImageFile);
+                    ExitOnFailure(hr, "Failed to combine image file path.");
+                }
             }
             else
             {
@@ -1767,8 +1807,8 @@ static HRESULT ParseImage(
     // If there is an image, convert it into a bitmap handle.
     if (pBitmap)
     {
-        Gdiplus::Color black;
-        Gdiplus::Status gs = pBitmap->GetHBITMAP(black, phImage);
+        Gdiplus::Color white (255, 255, 255, 255);
+        Gdiplus::Status gs = pBitmap->GetHBITMAP(white, phImage);
         ExitOnGdipFailure(gs, hr, "Failed to convert GDI+ bitmap into HBITMAP.");
     }
 
@@ -1780,6 +1820,8 @@ LExit:
         delete pBitmap;
     }
 
+    ReleaseStr(sczDpiFolder);
+    ReleaseStr(sczDpiFolderPath);
     ReleaseStr(sczImageFile);
     ReleaseBSTR(bstr);
 
@@ -1960,6 +2002,8 @@ static HRESULT ParseApplication(
         ExitOnFailure(hr, "Failed to copy application caption.");
     }
 
+    ScaleApplication(pTheme);
+
 LExit:
     ReleaseStr(sczIconFile);
     ReleaseBSTR(bstr);
@@ -2092,6 +2136,8 @@ static HRESULT ParseFonts(
             hr = HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
             ExitOnRootFailure(hr, "Theme font id duplicated.");
         }
+
+        ScaleFont(pTheme, &lf);
 
         pFont->hFont = ::CreateFontIndirectW(&lf);
         ExitOnNullWithLastError(pFont->hFont, hr, "Failed to create product title font.");
@@ -2252,7 +2298,7 @@ static HRESULT ParseImageLists(
                     ::DeleteObject(hBitmap);
                     hBitmap = NULL;
                 }
-                hr = ParseImage(hModule, wzRelativePath, pixnImage, &hBitmap);
+                hr = ParseImage(hModule, wzRelativePath, pixnImage, pTheme, &hBitmap);
                 ExitOnFailure(hr, "Failed to parse image: %u", i);
 
                 if (0 == i)
@@ -2552,7 +2598,7 @@ static HRESULT ParseControl(
     ExitOnFailure(hr, "Failed to find control width attribute.");
 
     // Parse the optional background resource image.
-    hr = ParseImage(hModule, wzRelativePath, pixn, &pControl->hImage);
+    hr = ParseImage(hModule, wzRelativePath, pixn, pTheme, &pControl->hImage);
     ExitOnFailure(hr, "Failed while parsing control image.");
 
     hr = XmlGetAttributeNumber(pixn, L"SourceX", reinterpret_cast<DWORD*>(&pControl->nSourceX));
@@ -2711,7 +2757,7 @@ static HRESULT ParseControl(
         }
         ExitOnFailure(hr, "Failed to get Billboard/@Interval.");
 
-        hr = ParseBillboards(hModule, wzRelativePath, pixn, pControl);
+        hr = ParseBillboards(hModule, wzRelativePath, pixn, pTheme, pControl);
         ExitOnFailure(hr, "Failed to parse billboards.");
     }
     else if (THEME_CONTROL_TYPE_TEXT == type)
@@ -2863,6 +2909,8 @@ static HRESULT ParseControl(
         ExitOnFailure(hr, "Failed to parse tabs");
     }
 
+    ScaleControl(pTheme, pControl);
+
 LExit:
     ReleaseBSTR(bstrText);
 
@@ -2874,6 +2922,7 @@ static HRESULT ParseBillboards(
     __in_opt HMODULE hModule,
     __in_opt LPCWSTR wzRelativePath,
     __in IXMLDOMNode* pixn,
+    __in THEME* pTheme,
     __in THEME_CONTROL* pControl
     )
 {
@@ -2901,7 +2950,7 @@ static HRESULT ParseBillboards(
         i = 0;
         while (S_OK == (hr = XmlNextElement(pixnl, &pixnChild, NULL)))
         {
-            hr = ParseImage(hModule, wzRelativePath, pixnChild, &pControl->ptbBillboards[i].hImage);
+            hr = ParseImage(hModule, wzRelativePath, pixnChild, pTheme, &pControl->ptbBillboards[i].hImage);
             ExitOnFailure(hr, "Failed to get billboard image.");
 
             hr = XmlGetText(pixnChild, &bstrText);
@@ -3191,10 +3240,15 @@ static HRESULT DrawImage(
     __in const THEME_CONTROL* pControl
     )
 {
+    BITMAP bm = {};
+
     DWORD dwHeight = pdis->rcItem.bottom - pdis->rcItem.top;
     DWORD dwWidth = pdis->rcItem.right - pdis->rcItem.left;
     int nSourceX = pControl->hImage ? 0 : pControl->nSourceX;
     int nSourceY = pControl->hImage ? 0 : pControl->nSourceY;
+
+    DWORD dwSourceHeight = dwHeight;
+    DWORD dwSourceWidth = dwWidth;
 
     BLENDFUNCTION bf = { };
     bf.BlendOp = AC_SRC_OVER;
@@ -3203,12 +3257,18 @@ static HRESULT DrawImage(
 
     HDC hdcMem = ::CreateCompatibleDC(pdis->hDC);
     HBITMAP hDefaultBitmap = static_cast<HBITMAP>(::SelectObject(hdcMem, pControl->hImage ? pControl->hImage : pTheme->hImage));
+    
+    if (pControl->hImage && ::GetObjectW(pControl->hImage, sizeof(BITMAP), &bm) > 0)
+    {
+        dwSourceWidth = bm.bmWidth;
+        dwSourceHeight = bm.bmHeight;
+    }
 
     // Try to draw the image with transparency and if that fails (usually because the image has no
     // alpha channel) then draw the image as is.
-    if (!::AlphaBlend(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwWidth, dwHeight, bf))
+    if (!::AlphaBlend(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwSourceWidth, dwSourceHeight, bf))
     {
-        ::StretchBlt(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwWidth, dwHeight, SRCCOPY);
+        ::StretchBlt(pdis->hDC, 0, 0, dwWidth, dwHeight, hdcMem, nSourceX, nSourceY, dwSourceWidth, dwSourceHeight, SRCCOPY);
     }
 
     ::SelectObject(hdcMem, hDefaultBitmap);
@@ -3621,4 +3681,58 @@ static HRESULT SizeListViewColumns(
 
 LExit:
     return hr;
+}
+
+DAPI_(int) ScaleByFactor(
+    int pixels,
+    FLOAT fScaleFactor
+    )
+{
+    if (pixels == -1)
+    {
+        return pixels;
+    }
+
+    float x = pixels * fScaleFactor;
+    return static_cast<int>(std::rintf(x));
+}
+
+static void ScaleApplication(
+    __in THEME* pTheme
+    )
+{
+    pTheme->nWidth = ScaleByFactor(pTheme->nWidth, pTheme->fScaleFactorX);
+    pTheme->nHeight = ScaleByFactor(pTheme->nHeight, pTheme->fScaleFactorY);
+
+    pTheme->nMinimumWidth = ScaleByFactor(pTheme->nMinimumWidth, pTheme->fScaleFactorX);
+    pTheme->nMinimumHeight = ScaleByFactor(pTheme->nMinimumHeight, pTheme->fScaleFactorY);
+
+    pTheme->nSourceX = ScaleByFactor(pTheme->nSourceX, pTheme->fScaleFactorX);
+    pTheme->nSourceY = ScaleByFactor(pTheme->nSourceY, pTheme->fScaleFactorY);
+}
+
+static void ScaleControl(
+    __in const THEME* pTheme,
+    __in THEME_CONTROL* pControl
+    )
+{
+    pControl->nX = ScaleByFactor(pControl->nX, pTheme->fScaleFactorX);
+    pControl->nY = ScaleByFactor(pControl->nY, pTheme->fScaleFactorY);
+
+    pControl->nWidth = ScaleByFactor(pControl->nWidth, pTheme->fScaleFactorX);
+    pControl->nHeight = ScaleByFactor(pControl->nHeight, pTheme->fScaleFactorY);
+
+    pControl->nSourceX = ScaleByFactor(pControl->nSourceX, pTheme->fScaleFactorX);
+    pControl->nSourceY = ScaleByFactor(pControl->nSourceY, pTheme->fScaleFactorY);
+}
+
+static void ScaleFont(
+    __in const THEME* pTheme,
+    __in LOGFONTW* lf
+    )
+{
+    if (lf->lfHeight < 0)
+    {
+        lf->lfHeight = ScaleByFactor(lf->lfHeight, pTheme->fScaleFactorX);
+    }
 }

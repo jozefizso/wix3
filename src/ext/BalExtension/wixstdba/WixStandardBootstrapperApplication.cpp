@@ -141,6 +141,8 @@ enum WIXSTDBA_CONTROL
 
     WIXSTDBA_CONTROL_SUCCESS_HEADER,
     WIXSTDBA_CONTROL_SUCCESS_INSTALL_HEADER,
+    WIXSTDBA_CONTROL_SUCCESS_INSTALL_DESCRIPTION,
+    WIXSTDBA_CONTROL_SUCCESS_INSTALL_ILLUSTRATION,
     WIXSTDBA_CONTROL_SUCCESS_UNINSTALL_HEADER,
     WIXSTDBA_CONTROL_SUCCESS_REPAIR_HEADER,
 
@@ -212,6 +214,8 @@ static THEME_ASSIGN_CONTROL_ID vrgInitControls[] = {
 
     { WIXSTDBA_CONTROL_SUCCESS_HEADER, L"SuccessHeader" },
     { WIXSTDBA_CONTROL_SUCCESS_INSTALL_HEADER, L"SuccessInstallHeader" },
+    { WIXSTDBA_CONTROL_SUCCESS_INSTALL_DESCRIPTION, L"SuccessInstallDescription" },
+    { WIXSTDBA_CONTROL_SUCCESS_INSTALL_ILLUSTRATION, L"SuccessInstallIllustration" },
     { WIXSTDBA_CONTROL_SUCCESS_UNINSTALL_HEADER, L"SuccessUninstallHeader" },
     { WIXSTDBA_CONTROL_SUCCESS_REPAIR_HEADER, L"SuccessRepairHeader" },
 
@@ -1390,6 +1394,7 @@ private: // privates
 
         hr = ThemeLoadFromFile(sczThemePath, &m_pTheme);
         BalExitOnFailure1(hr, "Failed to load theme from path: %ls", sczThemePath);
+        BalLog(BOOTSTRAPPER_LOG_LEVEL_STANDARD, "Primary monitor DPI configuration: ScaleFactorX=%.2f, ScaleFactorY=%.2f", m_pTheme->fScaleFactorX, m_pTheme->fScaleFactorY);
 
         hr = ThemeLocalize(m_pTheme, m_pWixLoc);
         BalExitOnFailure1(hr, "Failed to localize theme: %ls", sczThemePath);
@@ -2549,6 +2554,16 @@ private: // privates
                     if (ThemeControlExists(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_INSTALL_HEADER))
                     {
                         ThemeControlEnable(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_INSTALL_HEADER, BOOTSTRAPPER_ACTION_INSTALL == m_plannedAction);
+                    }
+
+                    if (ThemeControlExists(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_INSTALL_DESCRIPTION))
+                    {
+                        ThemeControlEnable(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_INSTALL_DESCRIPTION, BOOTSTRAPPER_ACTION_INSTALL == m_plannedAction);
+                    }
+
+                    if (ThemeControlExists(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_INSTALL_ILLUSTRATION))
+                    {
+                        ThemeControlEnable(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_INSTALL_ILLUSTRATION, BOOTSTRAPPER_ACTION_INSTALL == m_plannedAction);
                     }
 
                     if (ThemeControlExists(m_pTheme, WIXSTDBA_CONTROL_SUCCESS_UNINSTALL_HEADER))

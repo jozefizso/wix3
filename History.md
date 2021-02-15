@@ -1,3 +1,9 @@
+## WixBuild: Version 3.14.x-dev
+
+* JozefIzso: WIXBUG:3920 - Make themes DPI aware
+
+* HeathS: WIXBUG:4541 - Add support for high DPI to the Burn engine
+
 ## WixBuild: Version 3.14.0.4118
 
 * SeanHall: WIXBUG:4342 - Fix WixStdBA hang with DisplayInternalUI when pressing the BA cancel button.
