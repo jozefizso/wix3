@@ -303,7 +303,9 @@ DAPI_(HRESULT) ThemeLoadFromFile(
 {
     HRESULT hr = S_OK;
     IXMLDOMDocument* pixd = NULL;
+    WIX_LOCALIZATION* pWixLoc = NULL;
     LPWSTR sczRelativePath = NULL;
+    LPWSTR sczLocPath = NULL;
 
     hr = XmlLoadDocumentFromFile(wzThemeFile, &pixd);
     ExitOnFailure(hr, "Failed to load theme resource as XML document.");
@@ -314,8 +316,18 @@ DAPI_(HRESULT) ThemeLoadFromFile(
     hr = ParseTheme(NULL, sczRelativePath, pixd, ppTheme);
     ExitOnFailure(hr, "Failed to parse theme.");
 
+    hr = PathConcat(sczRelativePath, L"Localization.en.wxl", &sczLocPath);
+    ExitOnFailure(hr, "Failed to create localization file path.");
+
+    hr = LocLoadFromFile(sczLocPath, &pWixLoc);
+    ExitOnFailure(hr, "Failed to load localization file.");
+
+    hr = ThemeLocalize(*ppTheme, pWixLoc);
+    ExitOnFailure(hr, "Failed to localize the theme.");
+
 LExit:
     ReleaseStr(sczRelativePath);
+    ReleaseStr(sczLocPath);
     ReleaseObject(pixd);
 
     return hr;
@@ -338,7 +350,7 @@ DAPI_(HRESULT) ThemeLoadFromResource(
     ExitOnFailure(hr, "Failed to read theme from resource.");
 
     // Ensure returned resource buffer is null-terminated.
-    reinterpret_cast<BYTE *>(pvResource)[cbResource - 1] = '\0';
+    //reinterpret_cast<BYTE *>(pvResource)[cbResource - 1] = '\0';
 
     hr = StrAllocStringAnsi(&sczXml, reinterpret_cast<LPCSTR>(pvResource), cbResource, CP_UTF8);
     ExitOnFailure(hr, "Failed to convert XML document data from UTF-8 to unicode string.");
