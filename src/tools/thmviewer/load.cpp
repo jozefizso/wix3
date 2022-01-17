@@ -75,6 +75,10 @@ static DWORD WINAPI LoadThreadProc(
     THEME* pTheme = NULL;
     HANDLE_THEME* pHandle = NULL;
 
+    WIX_LOCALIZATION* pWixLoc = NULL;
+    LPWSTR sczLocPath = NULL;
+    LPCWSTR wzLocFileName = L"Localization.en.wxl";
+
     hr = ::CoInitialize(NULL);
     ExitOnFailure(hr, "Failed to initialize COM on load thread.");
     fComInitialized = TRUE;
@@ -107,6 +111,15 @@ static DWORD WINAPI LoadThreadProc(
         }
         else
         {
+            hr = PathConcat(sczDirectory, wzLocFileName, &sczLocPath);
+            ExitOnFailure(hr, "Failed to concat base path and localization file.");
+
+            hr = LocLoadFromFile(sczLocPath, &pWixLoc);
+            ExitOnFailure(hr, "Failed to load localization file.");
+
+            hr = ThemeLocalize(pTheme, pWixLoc);
+            ExitOnFailure(hr, "Failed to localize theme.");
+
             hr = AllocHandleTheme(pTheme, &pHandle);
             ExitOnFailure(hr, "Failed to allocate handle to theme");
 
@@ -157,6 +170,7 @@ LExit:
     ReleaseFileHandle(hDirectory);
     ReleaseStr(sczDirectory);
     ReleaseStr(sczThemePath);
+    ReleaseStr(sczLocPath);
     return hr;
 }
 
