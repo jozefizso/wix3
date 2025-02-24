@@ -64,7 +64,7 @@
 
   <!-- Directories from installed software. -->
   <PropertyGroup>
-    <HelpCompilerPath>$(ProgramFiles)\HTML Help Workshop</HelpCompilerPath>
+    <HelpCompilerPath>$(MSBuildProgramFiles32)\HTML Help Workshop</HelpCompilerPath>
     <HelpCompiler>$(HelpCompilerPath)\hhc.exe</HelpCompiler>
 
     <BuildSandcastleDocumentation Condition=" '$(BuildSandcastleDocumentation)'=='' and '$(Configuration)'=='Release' ">true</BuildSandcastleDocumentation>
