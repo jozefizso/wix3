@@ -4,10 +4,11 @@
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup Condition=" $(StaticAnalysisEnabled) and ($(VS2013Available) or $(VS2015Available) or $(VS2017Available)) ">
+  <PropertyGroup Condition=" $(StaticAnalysisEnabled) and ($(VS2013Available) or $(VS2015Available) or $(VS2017Available) or $(VS2022Available)) ">
     <PlatformToolset Condition="$(VS2013Available)">v120</PlatformToolset>
     <PlatformToolset Condition="$(VS2015Available)">v140</PlatformToolset>
     <PlatformToolset Condition="$(VS2017Available)">v140</PlatformToolset>
+    <PlatformToolset Condition="$(VS2022Available)">v143</PlatformToolset>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
     <!-- turn off deprecation warning -->
@@ -15,7 +16,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- If available and we're not explicitly setting the toolset, use VS2017; otherwise fall back to VS2015, VS2013, VS2012, VS2010, in that order. -->
+    <!-- If available and we're not explicitly setting the toolset, use VS2022; otherwise fall back to VS2017, VS2015, VS2013, VS2012, VS2010, in that order. -->
+    <PlatformToolset Condition=" $(VS2022Available) and ('$(PlatformToolset)'=='' or '$(DefaultToVS)'=='2022') ">v143</PlatformToolset>
     <PlatformToolset Condition=" $(VS2017Available) and ('$(PlatformToolset)'=='' or '$(DefaultToVS)'=='2017') ">v141</PlatformToolset>
     <PlatformToolset Condition=" $(VS2015Available) and ('$(PlatformToolset)'=='' or '$(DefaultToVS)'=='2015') ">v140</PlatformToolset>
     <PlatformToolset Condition=" $(VS2013Available) and ('$(PlatformToolset)'=='' or '$(DefaultToVS)'=='2013') ">v120</PlatformToolset>
@@ -42,6 +44,7 @@
     <MultiTargetDirSuffix Condition=" '$(PlatformToolset)'=='v120' ">2013</MultiTargetDirSuffix>
     <MultiTargetDirSuffix Condition=" '$(PlatformToolset)'=='v140' ">2015</MultiTargetDirSuffix>
     <MultiTargetDirSuffix Condition=" '$(PlatformToolset)'=='v141' ">2017</MultiTargetDirSuffix>
+    <MultiTargetDirSuffix Condition=" '$(PlatformToolset)'=='v143' ">2022</MultiTargetDirSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -74,6 +77,7 @@
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)'=='' ">v4.6.2</TargetFrameworkVersion>
     <PlatformToolset Condition="$(VS2015Available)">v140</PlatformToolset>
     <PlatformToolset Condition="$(VS2017Available)">v141</PlatformToolset>
+    <PlatformToolset Condition="$(VS2022Available)">v143</PlatformToolset>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'=='' AND '$(VisualStudioVersion)'>='15.0'">

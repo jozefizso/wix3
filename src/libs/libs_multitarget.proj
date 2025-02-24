@@ -123,5 +123,35 @@
     </ProjectReference>
   </ItemGroup>
 
+  <ItemGroup Condition=" $(VS2022Available) and (!$(StaticAnalysisEnabled) AND ('$(Platform)'=='x86' OR '$(Platform)'=='x64')) ">
+    <ProjectReference Include="dutil\dutil.vcxproj">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+    <ProjectReference Include="wcautil\wcautil.vcxproj">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+    <ProjectReference Include="balutil\balutil.vcxproj" Condition=" '$(Platform)'=='x86' ">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+    <ProjectReference Include="deputil\deputil.vcxproj">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(VS2022Available) and ($(StaticAnalysisEnabled) OR ('$(Platform)'=='arm') OR '$(Platform)'=='arm64') ">
+    <ProjectReference Include="dutil\dutil.vcxproj">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+    <ProjectReference Include="wcautil\wcautil.vcxproj">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+    <ProjectReference Include="balutil\balutil.vcxproj" Condition=" '$(Platform)'=='arm' ">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+    <ProjectReference Include="deputil\deputil.vcxproj">
+      <Properties>PlatformToolset=v143</Properties>
+    </ProjectReference>
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), wix.proj))\tools\Traversal.targets" />
 </Project>
