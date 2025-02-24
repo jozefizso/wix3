@@ -242,13 +242,13 @@
     use the public key in the enlistment.  We must find a key file.
   -->
   <PropertyGroup Condition=" '$(OFFICIAL_WIX_BUILD)'=='' ">
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)publickey_wix.snk</AssemblyOriginatorKeyFile>
-    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)wix.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(OFFICIAL_WIX_BUILD)'!='' ">
-    <AssemblyOriginatorKeyFile>$(OFFICIAL_WIX_BUILD)</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)wix.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <SignAssembly>true</SignAssembly>
     <BuildSandcastleDocumentation>true</BuildSandcastleDocumentation>

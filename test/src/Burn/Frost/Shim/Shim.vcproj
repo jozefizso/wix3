@@ -74,7 +74,7 @@
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
 				TargetMachine="1"
-				KeyFile="&quot;$(ProjectDir)..\..\..\..\..\bin\publickey_wix.snk&quot;"
+				KeyFile="&quot;$(ProjectDir)..\..\..\..\..\bin\wix.snk&quot;"
 				DelaySign="true"
 			/>
 			<Tool
