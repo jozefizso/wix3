@@ -60,8 +60,8 @@
   -->
   <Target Name="CheckRequiredProperties" DependsOnTargets="Diagnostics">
     <PropertyGroup>
-      <DisabledWixStrongName32>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\StrongName\Verification\*,ce35f76fcda82bad', '', 'ABSENT', RegistryView.Registry32))</DisabledWixStrongName32>
-      <DisabledWixStrongName64>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\StrongName\Verification\*,ce35f76fcda82bad', '', 'ABSENT', RegistryView.Registry64))</DisabledWixStrongName64>
+      <DisabledWixStrongName32>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\StrongName\Verification\*,ce35f76fcda82bad', '', 'ABSENTx', RegistryView.Registry32))</DisabledWixStrongName32>
+      <DisabledWixStrongName64>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\StrongName\Verification\*,ce35f76fcda82bad', '', 'ABSENTx', RegistryView.Registry64))</DisabledWixStrongName64>
     </PropertyGroup>
 
     <Error
