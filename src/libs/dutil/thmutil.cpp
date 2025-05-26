@@ -357,7 +357,7 @@ DAPI_(HRESULT) ThemeLoadFromResource(
     ExitOnFailure(hr, "Failed to read theme from resource.");
 
     // Ensure returned resource buffer is null-terminated.
-    reinterpret_cast<BYTE *>(pvResource)[cbResource - 1] = '\0';
+    ////reinterpret_cast<BYTE *>(pvResource)[cbResource - 1] = '\0';
 
     hr = StrAllocStringAnsi(&sczXml, reinterpret_cast<LPCSTR>(pvResource), cbResource, CP_UTF8);
     ExitOnFailure(hr, "Failed to convert XML document data from UTF-8 to unicode string.");
