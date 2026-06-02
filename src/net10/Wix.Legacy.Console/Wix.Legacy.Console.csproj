@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>wconsole</AssemblyName>
+    <RootNamespace>Microsoft.Tools.WindowsInstallerXml</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../tools/wconsole/*.cs" Exclude="../../tools/wconsole/AssemblyInfo.cs" />
+  </ItemGroup>
+</Project>

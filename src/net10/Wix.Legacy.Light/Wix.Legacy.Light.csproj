@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>light</AssemblyName>
+    <RootNamespace>Microsoft.Tools.WindowsInstallerXml.Tools</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../tools/light/*.cs" Exclude="../../tools/light/AssemblyInfo.cs" />
+    <EmbeddedResource Include="../../tools/light/LightStrings.resx" />
+    <None Include="../../tools/light/darice.cub" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../tools/light/mergemod.cub" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../tools/light/mergemod.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Wix.Legacy.Console/Wix.Legacy.Console.csproj" />
+    <ProjectReference Include="../Wix.Legacy.Core/Wix.Legacy.Core.csproj" />
+  </ItemGroup>
+</Project>

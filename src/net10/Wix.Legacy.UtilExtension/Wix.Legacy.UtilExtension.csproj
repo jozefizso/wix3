@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>WixUtilExtension</AssemblyName>
+    <RootNamespace>Microsoft.Tools.WindowsInstallerXml.Extensions</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS0618;SYSLIB0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../ext/UtilExtension/wixext/*.cs" Exclude="../../ext/UtilExtension/wixext/AssemblyInfo.cs" />
+    <Compile Include="Net10AssemblyInfo.cs" />
+    <Compile Include="$(IntermediateOutputPath)messages.cs" Link="Generated/messages.cs" />
+    <Compile Include="$(IntermediateOutputPath)util.cs" Link="Generated/util.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Extensions.Data.Messages.resources">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Data.Messages.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../ext/UtilExtension/wixext/Data/tables.xml">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Data.tables.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../ext/UtilExtension/wixext/Xsd/util.xsd">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Xsd.util.xsd</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(IntermediateOutputPath)util.wixlib">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Data.util.wixlib</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Wix.Legacy.Core/Wix.Legacy.Core.csproj" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UtilWixlibSource Include="../../ext/UtilExtension/wixlib/UtilExtension.wxs" />
+    <UtilWixlibSource Include="../../ext/UtilExtension/wixlib/UtilExtension_x86.wxs" />
+    <UtilWixlibSource Include="../../ext/UtilExtension/wixlib/UtilExtension_x64.wxs" />
+    <UtilWixlibSource Include="../../ext/UtilExtension/wixlib/UtilExtension_arm64.wxs" Condition="'$(BuildARM64)' == 'true'" />
+
+    <UtilWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/UtilExtension.wixobj" />
+    <UtilWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/UtilExtension_x86.wixobj" />
+    <UtilWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/UtilExtension_x64.wixobj" />
+    <UtilWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/UtilExtension_arm64.wixobj" Condition="'$(BuildARM64)' == 'true'" />
+  </ItemGroup>
+
+  <Target Name="GenerateUtilExtensionCode" BeforeTargets="PrepareResources;CoreCompile">
+    <MSBuild Projects="../Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="XsdGenTargetPath" />
+    </MSBuild>
+    <MSBuild Projects="../Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="MsgGenTargetPath" />
+    </MSBuild>
+
+    <Exec Command="dotnet &quot;$(XsdGenTargetPath)&quot; &quot;../../ext/UtilExtension/wixext/Xsd/util.xsd&quot; &quot;$(IntermediateOutputPath)util.cs&quot; Microsoft.Tools.WindowsInstallerXml.Extensions.Serialize.Util Microsoft.Tools.WindowsInstallerXml.Serialize" />
+    <Exec Command="dotnet &quot;$(MsgGenTargetPath)&quot; -nologo &quot;../../ext/UtilExtension/wixext/Data/messages.xml&quot; &quot;$(IntermediateOutputPath)messages.cs&quot; &quot;$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Extensions.Data.Messages.resources&quot;" />
+  </Target>
+
+  <Target Name="CopyPrebuiltUtilExtensionWixlib" BeforeTargets="PrepareResources;CoreCompile" Condition="'$(PrebuiltUtilWixlib)' != ''">
+    <Copy SourceFiles="$(PrebuiltUtilWixlib)" DestinationFiles="$(IntermediateOutputPath)util.wixlib" />
+  </Target>
+
+  <Target Name="GenerateUtilExtensionWixlib" BeforeTargets="PrepareResources;CoreCompile" Condition="'$(PrebuiltUtilWixlib)' == ''">
+    <MSBuild Projects="../Wix.Legacy.Candle/Wix.Legacy.Candle.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.Candle/Wix.Legacy.Candle.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="CandleTargetPath" />
+    </MSBuild>
+    <MSBuild Projects="../Wix.Legacy.Lit/Wix.Legacy.Lit.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.Lit/Wix.Legacy.Lit.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="LitTargetPath" />
+    </MSBuild>
+    <MSBuild Projects="../Wix.Legacy.GenerateWixInclude/Wix.Legacy.GenerateWixInclude.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.GenerateWixInclude/Wix.Legacy.GenerateWixInclude.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="GenerateWixIncludeTargetPath" />
+    </MSBuild>
+
+    <MakeDir Directories="$(IntermediateOutputPath)wixlib/inc;$(IntermediateOutputPath)wixlib/obj" />
+
+    <Exec Command="dotnet &quot;$(GenerateWixIncludeTargetPath)&quot; -nologo &quot;../../libs/wcautil/custommsierrors.h&quot; &quot;$(IntermediateOutputPath)wixlib/inc/caerr.wxi&quot;" />
+    <Exec Command="dotnet &quot;$(CandleTargetPath)&quot; -nologo -I&quot;$(IntermediateOutputPath)wixlib/inc&quot; -I&quot;../../ext/ca/inc&quot; -I&quot;../../ext/UtilExtension/wixlib&quot; -out &quot;$(IntermediateOutputPath)wixlib/obj/&quot; @(UtilWixlibSource->'&quot;%(FullPath)&quot;', ' ')" />
+    <Exec Command="dotnet &quot;$(LitTargetPath)&quot; -nologo -out &quot;$(IntermediateOutputPath)util.wixlib&quot; @(UtilWixlibObject->'&quot;%(FullPath)&quot;', ' ')" />
+  </Target>
+</Project>

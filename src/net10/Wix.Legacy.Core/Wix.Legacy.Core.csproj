@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>wix</AssemblyName>
+    <RootNamespace>Microsoft.Tools.WindowsInstallerXml</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS0618;SYSLIB0003;SYSLIB0004;SYSLIB0005;SYSLIB0011</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../tools/wix/**/*.cs" Exclude="../../tools/wix/AssemblyInfo.cs" />
+    <Compile Include="../../common/WixDistribution.cs" Link="WixDistribution.cs" />
+    <Compile Include="SystemWindowsFormsShim.cs" />
+    <Compile Include="$(IntermediateOutputPath)messages.cs" Link="Generated/messages.cs" />
+    <Compile Include="$(IntermediateOutputPath)wix.cs" Link="Generated/wix.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Data.Messages.resources">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Data.Messages.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../tools/wix/WixStrings.resx" />
+    <EmbeddedResource Include="../../tools/wix/WixDistributionSpecificStrings.resx" />
+    <EmbeddedResource Include="../../tools/wix/Data/actions.xml">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Data.actions.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../tools/wix/Data/tables.xml">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Data.tables.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../tools/wix/Data/messages.xml">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Data.messages.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../tools/wix/Xsd/**/*.xsd">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Xsd.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Wix.Legacy.Dtf.Resources/Wix.Legacy.Dtf.Resources.csproj" />
+    <ProjectReference Include="../Wix.Legacy.Dtf.WindowsInstaller/Wix.Legacy.Dtf.WindowsInstaller.csproj" />
+    <PackageReference Include="System.CodeDom" Version="10.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.0" />
+  </ItemGroup>
+
+  <Target Name="GenerateWixSerializationCode" BeforeTargets="CoreCompile"
+          Inputs="../../tools/wix/Xsd/wix.xsd"
+          Outputs="$(IntermediateOutputPath)wix.cs">
+    <MSBuild Projects="../Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="XsdGenTargetPath" />
+    </MSBuild>
+    <Exec Command="dotnet &quot;$(XsdGenTargetPath)&quot; &quot;../../tools/wix/Xsd/wix.xsd&quot; &quot;$(IntermediateOutputPath)wix.cs&quot; Microsoft.Tools.WindowsInstallerXml.Serialize" />
+  </Target>
+
+  <Target Name="GenerateWixMessageCode" BeforeTargets="PrepareResources;CoreCompile"
+          Inputs="../../tools/wix/Data/messages.xml"
+          Outputs="$(IntermediateOutputPath)messages.cs;$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Data.Messages.resources">
+    <MSBuild Projects="../Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="MsgGenTargetPath" />
+    </MSBuild>
+    <Exec Command="dotnet &quot;$(MsgGenTargetPath)&quot; -nologo &quot;../../tools/wix/Data/messages.xml&quot; &quot;$(IntermediateOutputPath)messages.cs&quot; &quot;$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Data.Messages.resources&quot;" />
+  </Target>
+</Project>

@@ -1,5 +1,7 @@
 [Bb]uild/
+[Bb]in/
 [Pp]ackages/
+src/net10/artifacts/
 ipch/
 .vs/
 obj/

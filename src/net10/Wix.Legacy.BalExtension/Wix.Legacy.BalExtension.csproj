@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>WixBalExtension</AssemblyName>
+    <RootNamespace>Microsoft.Tools.WindowsInstallerXml.Extensions</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS0618;SYSLIB0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../ext/BalExtension/wixext/*.cs" Exclude="../../ext/BalExtension/wixext/AssemblyInfo.cs" />
+    <Compile Include="Net10AssemblyInfo.cs" />
+    <Compile Include="$(IntermediateOutputPath)bal.cs" Link="Generated/bal.cs" />
+    <Compile Include="$(IntermediateOutputPath)messages.cs" Link="Generated/messages.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Extensions.Data.Messages.resources">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Data.Messages.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../ext/BalExtension/wixext/data/tables.xml">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Data.tables.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="../../ext/BalExtension/wixext/Xsd/bal.xsd">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Xsd.bal.xsd</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(IntermediateOutputPath)bal.wixlib">
+      <LogicalName>Microsoft.Tools.WindowsInstallerXml.Extensions.Data.bal.wixlib</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Wix.Legacy.Core/Wix.Legacy.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <BalWixlibSource Include="../../ext/BalExtension/wixlib/BalExtension.wxs" />
+    <BalWixlibSource Include="../../ext/BalExtension/wixlib/Mba.wxs" />
+    <BalWixlibSource Include="../../ext/BalExtension/wixlib/wixstdba.wxs" />
+    <BalWixlibSource Include="../../ext/BalExtension/wixlib/wixstdba_x86.wxs" />
+
+    <BalWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/BalExtension.wixobj" />
+    <BalWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/Mba.wixobj" />
+    <BalWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/wixstdba.wixobj" />
+    <BalWixlibObject Include="$(IntermediateOutputPath)wixlib/obj/wixstdba_x86.wixobj" />
+  </ItemGroup>
+
+  <Target Name="GenerateBalExtensionCode" BeforeTargets="PrepareResources;CoreCompile">
+    <MSBuild Projects="../Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="XsdGenTargetPath" />
+    </MSBuild>
+    <MSBuild Projects="../Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="MsgGenTargetPath" />
+    </MSBuild>
+
+    <Exec Command="dotnet &quot;$(XsdGenTargetPath)&quot; &quot;../../ext/BalExtension/wixext/Xsd/bal.xsd&quot; &quot;$(IntermediateOutputPath)bal.cs&quot; Microsoft.Tools.WindowsInstallerXml.Extensions.Serialize.Bal Microsoft.Tools.WindowsInstallerXml.Serialize" />
+    <Exec Command="dotnet &quot;$(MsgGenTargetPath)&quot; -nologo &quot;../../ext/BalExtension/wixext/data/messages.xml&quot; &quot;$(IntermediateOutputPath)messages.cs&quot; &quot;$(IntermediateOutputPath)Microsoft.Tools.WindowsInstallerXml.Extensions.Data.Messages.resources&quot;" />
+  </Target>
+
+  <Target Name="CopyPrebuiltBalExtensionWixlib" BeforeTargets="PrepareResources;CoreCompile" Condition="'$(PrebuiltBalWixlib)' != ''">
+    <Copy SourceFiles="$(PrebuiltBalWixlib)" DestinationFiles="$(IntermediateOutputPath)bal.wixlib" />
+  </Target>
+
+  <Target Name="GenerateBalExtensionWixlib" BeforeTargets="PrepareResources;CoreCompile" Condition="'$(PrebuiltBalWixlib)' == ''">
+    <MSBuild Projects="../Wix.Legacy.Candle/Wix.Legacy.Candle.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.Candle/Wix.Legacy.Candle.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="CandleTargetPath" />
+    </MSBuild>
+    <MSBuild Projects="../Wix.Legacy.Lit/Wix.Legacy.Lit.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="../Wix.Legacy.Lit/Wix.Legacy.Lit.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="LitTargetPath" />
+    </MSBuild>
+
+    <MakeDir Directories="$(IntermediateOutputPath)wixlib/obj" />
+
+    <Exec Command="dotnet &quot;$(CandleTargetPath)&quot; -nologo -I&quot;../../ext/ca/inc&quot; -I&quot;../../ext/BalExtension/wixlib&quot; -out &quot;$(IntermediateOutputPath)wixlib/obj/&quot; @(BalWixlibSource->'&quot;%(FullPath)&quot;', ' ')" />
+    <Exec Command="dotnet &quot;$(LitTargetPath)&quot; -nologo -out &quot;$(IntermediateOutputPath)bal.wixlib&quot; @(BalWixlibObject->'&quot;%(FullPath)&quot;', ' ')" />
+  </Target>
+</Project>

@@ -1,0 +1,114 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Net10LayoutPath Condition="'$(Net10LayoutPath)' == ''">$(MSBuildThisFileDirectory)artifacts/$(Configuration)/</Net10LayoutPath>
+    <BurnEnginePath Condition="'$(BurnEnginePath)' == ''">$(PrebuiltBurnEngine)</BurnEnginePath>
+    <BurnEnginePlatform Condition="'$(BurnEnginePlatform)' == ''">x86</BurnEnginePlatform>
+    <BootstrapperCorePath Condition="'$(BootstrapperCorePath)' == ''">$(PrebuiltBootstrapperCore)</BootstrapperCorePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Wix.Legacy.BalExtension/Wix.Legacy.BalExtension.csproj" />
+    <ProjectReference Include="Wix.Legacy.Candle/Wix.Legacy.Candle.csproj" />
+    <ProjectReference Include="Wix.Legacy.GenerateWixInclude/Wix.Legacy.GenerateWixInclude.csproj" />
+    <ProjectReference Include="Wix.Legacy.Light/Wix.Legacy.Light.csproj" />
+    <ProjectReference Include="Wix.Legacy.Lit/Wix.Legacy.Lit.csproj" />
+    <ProjectReference Include="Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" />
+    <ProjectReference Include="Wix.Legacy.UtilExtension/Wix.Legacy.UtilExtension.csproj" />
+    <ProjectReference Include="Wix.Legacy.WixTasks/Wix.Legacy.WixTasks.csproj" />
+    <ProjectReference Include="Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LayoutProject Include="Wix.Legacy.BalExtension/Wix.Legacy.BalExtension.csproj" />
+    <LayoutProject Include="Wix.Legacy.Candle/Wix.Legacy.Candle.csproj" />
+    <LayoutProject Include="Wix.Legacy.GenerateWixInclude/Wix.Legacy.GenerateWixInclude.csproj" />
+    <LayoutProject Include="Wix.Legacy.Light/Wix.Legacy.Light.csproj" />
+    <LayoutProject Include="Wix.Legacy.Lit/Wix.Legacy.Lit.csproj" />
+    <LayoutProject Include="Wix.Legacy.MsgGen/Wix.Legacy.MsgGen.csproj" />
+    <LayoutProject Include="Wix.Legacy.UtilExtension/Wix.Legacy.UtilExtension.csproj" />
+    <LayoutProject Include="Wix.Legacy.WixTasks/Wix.Legacy.WixTasks.csproj" />
+    <LayoutProject Include="Wix.Legacy.XsdGen/Wix.Legacy.XsdGen.csproj" />
+
+    <LayoutContent Include="../tools/WixTasks/wix.targets" />
+    <LayoutContent Include="../tools/WixTasks/wix.ca.targets" />
+    <LayoutContent Include="../tools/WixTasks/wix.nativeca.targets" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild Projects="@(ProjectReference)" Targets="Build"
+             Properties="Configuration=$(Configuration);PrebuiltUtilWixlib=$(PrebuiltUtilWixlib);PrebuiltBalWixlib=$(PrebuiltBalWixlib)" />
+  </Target>
+
+  <Target Name="ValidateLayoutPayloads">
+    <Error Text="PrebuiltUtilWixlib does not exist: $(PrebuiltUtilWixlib)"
+           Condition="'$(PrebuiltUtilWixlib)' != '' and !Exists('$(PrebuiltUtilWixlib)')" />
+    <Error Text="PrebuiltBalWixlib does not exist: $(PrebuiltBalWixlib)"
+           Condition="'$(PrebuiltBalWixlib)' != '' and !Exists('$(PrebuiltBalWixlib)')" />
+    <Error Text="BurnEnginePath does not exist: $(BurnEnginePath)"
+           Condition="'$(BurnEnginePath)' != '' and !Exists('$(BurnEnginePath)')" />
+    <Error Text="BootstrapperCorePath does not exist: $(BootstrapperCorePath)"
+           Condition="'$(BootstrapperCorePath)' != '' and !Exists('$(BootstrapperCorePath)')" />
+  </Target>
+
+  <Target Name="Layout" DependsOnTargets="ValidateLayoutPayloads;Build">
+    <RemoveDir Directories="$(Net10LayoutPath)" />
+    <MakeDir Directories="$(Net10LayoutPath)" />
+
+    <ItemGroup>
+      <_LayoutFiles Include="Wix.Legacy.BalExtension/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.Candle/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.GenerateWixInclude/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.Light/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.Lit/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.MsgGen/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.UtilExtension/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.WixTasks/bin/$(Configuration)/net10.0/**/*" />
+      <_LayoutFiles Include="Wix.Legacy.XsdGen/bin/$(Configuration)/net10.0/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_LayoutFiles)"
+          DestinationFiles="@(_LayoutFiles->'$(Net10LayoutPath)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(LayoutContent)"
+          DestinationFolder="$(Net10LayoutPath)"
+          SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <_LayoutNamedPayload Include="$(PrebuiltUtilWixlib)" Condition="'$(PrebuiltUtilWixlib)' != '' and Exists('$(PrebuiltUtilWixlib)')">
+        <Destination>$(Net10LayoutPath)util.wixlib</Destination>
+      </_LayoutNamedPayload>
+      <_LayoutNamedPayload Include="$(PrebuiltBalWixlib)" Condition="'$(PrebuiltBalWixlib)' != '' and Exists('$(PrebuiltBalWixlib)')">
+        <Destination>$(Net10LayoutPath)bal.wixlib</Destination>
+      </_LayoutNamedPayload>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_LayoutNamedPayload)"
+          DestinationFiles="@(_LayoutNamedPayload->'%(Destination)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(_LayoutNamedPayload)' != ''" />
+
+    <MakeDir Directories="$(Net10LayoutPath)$(BurnEnginePlatform)"
+             Condition="'$(BurnEnginePath)' != '' and Exists('$(BurnEnginePath)')" />
+    <Copy SourceFiles="$(BurnEnginePath)"
+          DestinationFiles="$(Net10LayoutPath)$(BurnEnginePlatform)/burn.exe"
+          SkipUnchangedFiles="true"
+          Condition="'$(BurnEnginePath)' != '' and Exists('$(BurnEnginePath)')" />
+
+    <MakeDir Directories="$(Net10LayoutPath)sdk"
+             Condition="'$(BootstrapperCorePath)' != '' and Exists('$(BootstrapperCorePath)')" />
+    <Copy SourceFiles="$(BootstrapperCorePath)"
+          DestinationFiles="$(Net10LayoutPath)sdk/BootstrapperCore.dll"
+          SkipUnchangedFiles="true"
+          Condition="'$(BootstrapperCorePath)' != '' and Exists('$(BootstrapperCorePath)')" />
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild Projects="@(ProjectReference)" Targets="Clean" />
+    <RemoveDir Directories="$(Net10LayoutPath)" />
+  </Target>
+
+  <Target Name="Restore">
+    <MSBuild Projects="@(ProjectReference)" Targets="Restore" />
+  </Target>
+</Project>

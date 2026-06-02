@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>msggen</AssemblyName>
+    <RootNamespace>Microsoft.Tools.MsgGen</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS0618;SYSLIB0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../tools/src/MsgGen/*.cs" Exclude="../../../tools/src/MsgGen/AssemblyInfo.cs" />
+    <EmbeddedResource Include="../../../tools/src/MsgGen/Xsd/messages.xsd">
+      <LogicalName>Microsoft.Tools.MsgGen.Xsd.messages.xsd</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CodeDom" Version="10.0.0" />
+  </ItemGroup>
+</Project>

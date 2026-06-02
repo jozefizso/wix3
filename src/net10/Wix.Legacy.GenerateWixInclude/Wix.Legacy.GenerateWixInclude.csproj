@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>GenerateWixInclude</AssemblyName>
+    <RootNamespace>Microsoft.Tools.MsgGen</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../tools/src/GenerateWixInclude/*.cs" Exclude="../../../tools/src/GenerateWixInclude/AssemblyInfo.cs" />
+  </ItemGroup>
+</Project>
