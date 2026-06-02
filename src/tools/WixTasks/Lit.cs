@@ -17,7 +17,11 @@ namespace Microsoft.Tools.WindowsInstallerXml.Build.Tasks
     /// </summary>
     public sealed class Lit : WixToolTask
     {
+#if NET
+        private const string LitToolName = "lit.dll";
+#else
         private const string LitToolName = "lit.exe";
+#endif
 
         private string[] baseInputPaths;
         private ITaskItem[] bindInputPaths;

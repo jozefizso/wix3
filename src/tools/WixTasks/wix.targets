@@ -10,6 +10,8 @@
   <PropertyGroup>
     <WixTargetsImported>true</WixTargetsImported>
 
+    <WixInstallPath Condition=" '$(WixInstallPath)' == '' AND Exists('$(MSBuildThisFileDirectory)candle.dll')">$(MSBuildThisFileDirectory)</WixInstallPath>
+    <WixInstallPath Condition=" '$(WixInstallPath)' == '' AND Exists('$(MSBuildThisFileDirectory)candle.exe')">$(MSBuildThisFileDirectory)</WixInstallPath>
     <WixInstallPath Condition=" '$(WixInstallPath)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Installer XML\3.14@InstallRoot)</WixInstallPath>
     <WixInstallPath Condition=" '$(WixInstallPath)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows Installer XML\3.14@InstallRoot)</WixInstallPath>
   </PropertyGroup>
@@ -33,7 +35,8 @@
   <PropertyGroup>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
-    <WixTasksPath Condition=" '$(WixTasksPath)' == '' ">$(WixInstallPath)\WixTasks.dll</WixTasksPath>
+    <WixTasksPath Condition=" '$(WixTasksPath)' == '' AND Exists('$(MSBuildThisFileDirectory)WixTasks.dll')">$(MSBuildThisFileDirectory)WixTasks.dll</WixTasksPath>
+    <WixTasksPath Condition=" '$(WixTasksPath)' == '' ">$(WixInstallPath)WixTasks.dll</WixTasksPath>
     <LuxTargetsPath Condition=" '$(LuxTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Lux.targets</LuxTargetsPath>
     <LuxTargetsPath Condition=" '$(LuxTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Lux.targets</LuxTargetsPath>
     <LuxTasksPath Condition=" '$(LuxTasksPath)' == '' ">$(WixInstallPath)\LuxTasks.dll</LuxTasksPath>
@@ -70,10 +73,10 @@
   <UsingTask TaskName="HeatProject" AssemblyFile="$(WixTasksPath)" />
 
   <!-- These tasks are specific to the build process defined in this file, and are not considered general-purpose build tasks. -->
-  <UsingTask TaskName="AssignProjectConfiguration" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <UsingTask TaskName="AssignTargetPath" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <UsingTask TaskName="ResolveNonMSBuildProjectOutput" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <UsingTask TaskName="ResolveVCProjectOutput" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <UsingTask TaskName="AssignProjectConfiguration" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="AssignTargetPath" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="ResolveNonMSBuildProjectOutput" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="ResolveVCProjectOutput" AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
 
   <UsingTask TaskName="CreateItemAvoidingInference" AssemblyFile="$(WixTasksPath)" />
   <UsingTask TaskName="CreateProjectReferenceDefineConstants" AssemblyFile="$(WixTasksPath)" />
@@ -88,7 +91,7 @@
 
   <!-- WiX tools are 32bit EXEs, so run them out-of-proc when MSBuild is not 32bit. -->
   <PropertyGroup>
-    <RunWixToolsOutOfProc Condition=" '$(PROCESSOR_ARCHITECTURE)'!='x86' ">true</RunWixToolsOutOfProc>
+    <RunWixToolsOutOfProc Condition=" '$(OS)' == 'Windows_NT' and '$(PROCESSOR_ARCHITECTURE)'!='x86' ">true</RunWixToolsOutOfProc>
   </PropertyGroup>
 
   <!--
@@ -914,6 +917,38 @@
   </Target>
 
   <!--
+  ==================================================================================================
+  Restore
+
+    Restores MSBuild project references. WiX projects themselves do not have NuGet packages, but
+    SDK-style project references need their assets restored before a command-line WiX build can
+    build them.
+  ==================================================================================================
+  -->
+  <Target
+    Name="Restore"
+    DependsOnTargets="RestoreProjectReferences" />
+
+  <Target
+    Name="RestoreProjectReferences"
+    DependsOnTargets="AssignProjectConfiguration;_SplitProjectReferencesByFileExistence"
+    Condition=" '@(ProjectReference)' != '' ">
+
+    <ItemGroup>
+      <_MSBuildProjectReferenceToRestore
+        Include="@(_MSBuildProjectReferenceExistent)"
+        Condition=" '%(_MSBuildProjectReferenceExistent.Extension)' != '.vcxproj' " />
+    </ItemGroup>
+
+    <MSBuild
+      Projects="@(_MSBuildProjectReferenceToRestore)"
+      Targets="Restore"
+      Properties="%(_MSBuildProjectReferenceToRestore.SetConfiguration);%(_MSBuildProjectReferenceToRestore.SetPlatform)"
+      Condition=" '@(_MSBuildProjectReferenceToRestore)' != '' "
+      ContinueOnError="WarnAndContinue" />
+  </Target>
+
+  <!--
   ================================================================================================
   ResolveProjectReferences
 
@@ -1192,6 +1227,7 @@
   ==================================================================================================
   -->
   <PropertyGroup>
+    <DefineSolutionProperties Condition=" '$(DefineSolutionProperties)' == '' and '$(OS)' != 'Windows_NT' and '$(BuildingInsideVisualStudio)' != 'true' and '$(BuildingSolutionFile)' != 'true' ">false</DefineSolutionProperties>
     <DefineSolutionProperties Condition=" '$(DefineSolutionProperties)' == '' ">true</DefineSolutionProperties>
   </PropertyGroup>
   <Target

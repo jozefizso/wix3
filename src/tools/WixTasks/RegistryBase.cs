@@ -89,7 +89,9 @@ namespace Microsoft.Tools.WindowsInstallerXml.Build.Tasks
                         return Registry.Users;
 
                     case RegistryHive.CurrentConfig:
+#if !NET
                     case RegistryHive.DynData:
+#endif
                     case RegistryHive.PerformanceData:
                     default:
                         this.Log.LogError("Registry hive {0} not found or not supported.", this.Hive);

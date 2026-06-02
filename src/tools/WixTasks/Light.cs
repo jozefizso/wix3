@@ -18,7 +18,11 @@ namespace Microsoft.Tools.WindowsInstallerXml.Build.Tasks
     /// </summary>
     public sealed class Light : WixToolTask
     {
+#if NET
+        private const string LightToolName = "light.dll";
+#else
         private const string LightToolName = "Light.exe";
+#endif
 
         private string additionalCub;
         private bool allowIdenticalRows;

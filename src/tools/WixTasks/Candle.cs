@@ -17,7 +17,11 @@ namespace Microsoft.Tools.WindowsInstallerXml.Build.Tasks
     /// </summary>
     public sealed class Candle : WixToolTask
     {
+#if NET
+        private const string CandleToolName = "candle.dll";
+#else
         private const string CandleToolName = "candle.exe";
+#endif
 
         private string[] defineConstants;
         private ITaskItem[] extensions;
