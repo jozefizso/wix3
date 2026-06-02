@@ -500,7 +500,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Tools
                     continue;
                 }
 
-                if (arg.Length > 1 && ('-' == arg[0] || '/' == arg[0]))
+                if (CommandLine.IsSwitch(arg))
                 {
                     string parameter = arg.Substring(1);
 
@@ -786,7 +786,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Tools
                     continue;
                 }
 
-                if (arg.Length > 1 && ('-' == arg[0] || '/' == arg[0]))
+                if (CommandLine.IsSwitch(arg))
                 {
                     string parameter = arg.Substring(1);
 

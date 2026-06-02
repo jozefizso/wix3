@@ -54,7 +54,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
             AssemblyName assemblyName = new AssemblyName();
             assemblyName.Name = "wixTempAssembly";
 
-            AssemblyBuilder dynamicAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            AssemblyBuilder dynamicAssembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
             ModuleBuilder dynamicModule = dynamicAssembly.DefineDynamicModule("wixTempModule");
 
             MethodBuilder dynamicMethod = dynamicModule.DefinePInvokeMethod(entryPoint, dll, MethodAttributes.Static | MethodAttributes.Public | MethodAttributes.PinvokeImpl, CallingConventions.Standard, returnType, parameterTypes, CallingConvention.Winapi, CharSet.Ansi);

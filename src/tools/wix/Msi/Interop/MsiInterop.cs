@@ -5,6 +5,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Msi.Interop
     using System;
     using System.Text;
     using System.Runtime.InteropServices;
+    using System.Runtime.InteropServices.ComTypes;
 
     /// <summary>
     /// A callback function that the installer calls for progress notification and error messages.

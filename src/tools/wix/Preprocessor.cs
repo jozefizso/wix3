@@ -1576,7 +1576,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         // put the slash at the end of the path if its missing
                         if (!includeSearchPath.EndsWith("/", StringComparison.Ordinal) && !includeSearchPath.EndsWith("\\", StringComparison.Ordinal))
                         {
-                            pathBuilder.Append('\\');
+                            pathBuilder.Append(Path.DirectorySeparatorChar);
                         }
 
                         // append the relative path to the included file

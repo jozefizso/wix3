@@ -534,6 +534,47 @@ namespace Microsoft.Tools.WindowsInstallerXml
         }
 
         /// <summary>
+        /// Gets a file name from an authored path using either Windows or Unix directory separators.
+        /// </summary>
+        /// <param name="path">Path to inspect.</param>
+        /// <returns>The file name portion of the path.</returns>
+        public static string GetFileNameFromPath(string path)
+        {
+            if (String.IsNullOrEmpty(path))
+            {
+                return path;
+            }
+
+            int separator = path.LastIndexOfAny(new char[] { '\\', '/' });
+            return 0 <= separator ? path.Substring(separator + 1) : Path.GetFileName(path);
+        }
+
+        /// <summary>
+        /// Checks whether an authored path ends with either Windows or Unix directory separators.
+        /// </summary>
+        /// <param name="path">Path to inspect.</param>
+        /// <returns>True if the path ends with a directory separator.</returns>
+        public static bool EndsWithDirectorySeparator(string path)
+        {
+            return !String.IsNullOrEmpty(path) && (path.EndsWith("\\", StringComparison.Ordinal) || path.EndsWith("/", StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// Normalizes authored path separators to the current host separator.
+        /// </summary>
+        /// <param name="path">Path to normalize.</param>
+        /// <returns>The path using the current host separator.</returns>
+        public static string NormalizePathSeparators(string path)
+        {
+            if (String.IsNullOrEmpty(path))
+            {
+                return path;
+            }
+
+            return '/' == Path.DirectorySeparatorChar ? path.Replace('\\', '/') : path.Replace('/', '\\');
+        }
+
+        /// <summary>
         /// Generates a short file/directory name using an identifier and long file/directory name as input.
         /// </summary>
         /// <param name="longName">The long file/directory name.</param>

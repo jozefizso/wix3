@@ -4,6 +4,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Ole32
 {
     using System;
     using System.Runtime.InteropServices;
+    using System.Runtime.InteropServices.ComTypes;
 
     /// <summary>
     /// Specifies the access mode to use when opening, creating, or deleting a storage object.

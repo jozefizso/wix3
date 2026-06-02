@@ -20,6 +20,9 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
         /// <returns>The harvested registry values.</returns>
         public Wix.RegistryValue[] HarvestRegistryValues(string path)
         {
+#if NET
+            throw new PlatformNotSupportedException("Assembly COM registration harvesting is only supported on .NET Framework.");
+#else
             RegistrationServices regSvcs = new RegistrationServices();
             Assembly assembly = Assembly.LoadFrom(path);
 
@@ -33,6 +36,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Extensions
 
                 return registryHarvester.HarvestRegistry();
             }
+#endif
         }
     }
 }

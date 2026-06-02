@@ -124,6 +124,9 @@ namespace Microsoft.Tools.WindowsInstallerXml
         /// </summary>
         public static void PrepareConsoleForLocalization()
         {
+#if NET
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
             Thread.CurrentThread.CurrentUICulture = CultureInfo.CurrentUICulture.GetConsoleFallbackUICulture();
             if ((Console.OutputEncoding.CodePage != Encoding.UTF8.CodePage) &&
                 (Console.OutputEncoding.CodePage != Thread.CurrentThread.CurrentUICulture.TextInfo.OEMCodePage) &&

@@ -20,7 +20,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
         /// <returns>True if a valid string parameter exists there, false if not.</returns>
         public static bool IsValidArg(string[] args, int index)
         {
-            if (args.Length <= index || String.IsNullOrEmpty(args[index]) || '/' == args[index][0] || '-' == args[index][0])
+            if (args.Length <= index || String.IsNullOrEmpty(args[index]) || '-' == args[index][0] || IsSwitch(args[index]))
             {
                 return false;
             }
@@ -28,6 +28,26 @@ namespace Microsoft.Tools.WindowsInstallerXml
             {
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Determines whether a token should be parsed as a command-line switch.
+        /// </summary>
+        /// <param name="arg">The token to inspect.</param>
+        /// <returns>True if the token is a switch.</returns>
+        public static bool IsSwitch(string arg)
+        {
+            if (String.IsNullOrEmpty(arg) || 1 >= arg.Length)
+            {
+                return false;
+            }
+
+            if ('-' == arg[0])
+            {
+                return true;
+            }
+
+            return '/' == arg[0] && '/' != Path.DirectorySeparatorChar;
         }
 
         /// <summary>

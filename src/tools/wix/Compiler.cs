@@ -768,7 +768,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             {
                                 this.core.OnMessage(WixWarnings.DeprecatedAttribute(sourceLineNumbers, node.Name, attrib.Name, "SourceFile"));
                             }
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         case "SuppressModularization":
                             suppressModularization = this.core.GetAttributeYesNoValue(sourceLineNumbers, attrib);
@@ -872,7 +872,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             {
                                 this.core.OnMessage(WixWarnings.DeprecatedAttribute(sourceLineNumbers, node.Name, attrib.Name, "SourceFile"));
                             }
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         default:
                             this.core.UnexpectedAttribute(sourceLineNumbers, attrib);
@@ -6194,7 +6194,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             {
                                 this.core.OnMessage(WixWarnings.DeprecatedAttribute(sourceLineNumbers, node.Name, attrib.Name, "Source"));
                             }
-                            source = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            source = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             sourceSet = true;
                             break;
                         case "System":
@@ -6252,9 +6252,9 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 this.core.OnMessage(WixErrors.IllegalAttributeWithOtherAttribute(sourceLineNumbers, node.Name, "Name", "LongName"));
             }
 
-            if (sourceSet && !source.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) && null == name)
+            if (sourceSet && !CompilerCore.EndsWithDirectorySeparator(source) && null == name)
             {
-                name = Path.GetFileName(source);
+                name = CompilerCore.GetFileNameFromPath(source);
                 if (!CompilerCore.IsValidLongFilename(name, false))
                 {
                     this.core.OnMessage(WixErrors.IllegalLongFilename(sourceLineNumbers, node.Name, "Source", name));
@@ -6426,7 +6426,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                         source = shortName;
                     }
                 }
-                else if (source.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)) // if source relies on parent directories, append the file name
+                else if (CompilerCore.EndsWithDirectorySeparator(source)) // if source relies on parent directories, append the file name
                 {
                     if (!this.useShortFileNames && null != name)
                     {
@@ -7650,7 +7650,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             id = this.core.GetAttributeIdentifierValue(sourceLineNumbers, attrib);
                             break;
                         case "SourceFile":
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         default:
                             this.core.UnexpectedAttribute(sourceLineNumbers, attrib);
@@ -7726,7 +7726,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     switch (attrib.LocalName)
                     {
                         case "SourceFile":
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         default:
                             this.core.UnexpectedAttribute(sourceLineNumbers, attrib);
@@ -16552,7 +16552,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             parentSFPCatalog = name;
                             break;
                         case "SourceFile":
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         default:
                             this.core.UnexpectedAttribute(sourceLineNumbers, attrib);
@@ -18600,7 +18600,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             }
             else if (String.IsNullOrEmpty(name))
             {
-                name = Path.GetFileName(sourceFile);
+                name = CompilerCore.GetFileNameFromPath(sourceFile);
                 if (!CompilerCore.IsValidLongFilename(name, false))
                 {
                     this.core.OnMessage(WixErrors.IllegalLongFilename(sourceLineNumbers, node.Name, "Source", name));
@@ -18693,7 +18693,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             name = this.core.GetAttributeLongFilename(sourceLineNumbers, attrib, false);
                             break;
                         case "SourceFile":
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         default:
                             this.core.UnexpectedAttribute(sourceLineNumbers, attrib);
@@ -18712,7 +18712,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             }
             else if (String.IsNullOrEmpty(name))
             {
-                name = Path.GetFileName(sourceFile);
+                name = CompilerCore.GetFileNameFromPath(sourceFile);
                 if (!CompilerCore.IsValidLongFilename(name, false))
                 {
                     this.core.OnMessage(WixErrors.IllegalLongFilename(sourceLineNumbers, node.Name, "Source", name));
@@ -19983,7 +19983,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             manufacturer = this.core.GetAttributeValue(sourceLineNumbers, attrib);
                             break;
                         case "IconSourceFile":
-                            iconSourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            iconSourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         case "Name":
                             name = this.core.GetAttributeValue(sourceLineNumbers, attrib);
@@ -19992,7 +19992,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             parentName = this.core.GetAttributeValue(sourceLineNumbers, attrib);
                             break;
                         case "SplashScreenSourceFile":
-                            splashScreenSourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            splashScreenSourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         case "Tag":
                             tag = this.core.GetAttributeValue(sourceLineNumbers, attrib);
@@ -20282,7 +20282,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             id = this.core.GetAttributeIdentifierValue(sourceLineNumbers, attrib);
                             break;
                         case "SourceFile":
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         default:
                             this.core.UnexpectedAttribute(sourceLineNumbers, attrib);
@@ -20929,7 +20929,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             {
                 Row row = this.core.CreateRow(sourceLineNumbers, "Payload");
                 row[0] = id;
-                row[1] = String.IsNullOrEmpty(name) ? Path.GetFileName(sourceFile) : name;
+                row[1] = String.IsNullOrEmpty(name) ? CompilerCore.GetFileNameFromPath(sourceFile) : name;
                 row[2] = sourceFile;
                 row[3] = downloadUrl;
                 if (YesNoDefaultType.Default != compressed)
@@ -21521,7 +21521,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             }
                             break;
                         case "SourceFile":
-                            sourceFile = this.core.GetAttributeValue(sourceLineNumbers, attrib);
+                            sourceFile = CompilerCore.NormalizePathSeparators(this.core.GetAttributeValue(sourceLineNumbers, attrib));
                             break;
                         case "DownloadUrl":
                             downloadUrl = this.core.GetAttributeValue(sourceLineNumbers, attrib);
@@ -21680,7 +21680,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
             {
                 this.core.OnMessage(WixErrors.UnexpectedElementWithAttribute(sourceLineNumbers, node.Name, "RemotePayload", "SourceFile"));
             }
-            else if (sourceFile.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            else if (CompilerCore.EndsWithDirectorySeparator(sourceFile))
             {
                 if (String.IsNullOrEmpty(name))
                 {
@@ -21688,7 +21688,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 }
                 else
                 {
-                    sourceFile = Path.Combine(sourceFile, Path.GetFileName(name));
+                    sourceFile = Path.Combine(sourceFile, CompilerCore.GetFileNameFromPath(name));
                 }
             }
 
@@ -21707,11 +21707,11 @@ namespace Microsoft.Tools.WindowsInstallerXml
             {
                 if (!String.IsNullOrEmpty(name))
                 {
-                    id = CompilerCore.GetIdentifierFromName(Path.GetFileName(name));
+                    id = CompilerCore.GetIdentifierFromName(CompilerCore.GetFileNameFromPath(name));
                 }
                 else if (!String.IsNullOrEmpty(sourceFile))
                 {
-                    id = CompilerCore.GetIdentifierFromName(Path.GetFileName(sourceFile));
+                    id = CompilerCore.GetIdentifierFromName(CompilerCore.GetFileNameFromPath(sourceFile));
                 }
 
                 if (null == id)

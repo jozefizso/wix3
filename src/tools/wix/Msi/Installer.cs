@@ -6,7 +6,9 @@ namespace Microsoft.Tools.WindowsInstallerXml.Msi
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
     using System.Reflection;
+    using System.Security.Cryptography;
     using System.Text;
     using System.Xml;
     using Microsoft.Tools.WindowsInstallerXml.Msi.Interop;
@@ -288,6 +290,31 @@ namespace Microsoft.Tools.WindowsInstallerXml.Msi
         /// <param name="hash">Int array that receives the returned file hash information.</param>
         internal static void GetFileHash(string filePath, int options, out int[] hash)
         {
+#if NET
+            if ('\\' != Path.DirectorySeparatorChar)
+            {
+                if (!File.Exists(filePath))
+                {
+                    throw new FileNotFoundException(null, filePath);
+                }
+
+                using (MD5 md5 = MD5.Create())
+                {
+                    using (FileStream stream = File.OpenRead(filePath))
+                    {
+                        byte[] hashBytes = md5.ComputeHash(stream);
+
+                        hash = new int[4];
+                        hash[0] = BitConverter.ToInt32(hashBytes, 0);
+                        hash[1] = BitConverter.ToInt32(hashBytes, 4);
+                        hash[2] = BitConverter.ToInt32(hashBytes, 8);
+                        hash[3] = BitConverter.ToInt32(hashBytes, 12);
+                        return;
+                    }
+                }
+            }
+#endif
+
             MsiInterop.MSIFILEHASHINFO hashInterop = new MsiInterop.MSIFILEHASHINFO();
             hashInterop.FileHashInfoSize = 20;
 
@@ -317,6 +344,21 @@ namespace Microsoft.Tools.WindowsInstallerXml.Msi
         /// <param name="language">Returns the file language. Set to 0 for version information only.</param>
         internal static void GetFileVersion(string filePath, out string version, out string language)
         {
+#if NET
+            if ('\\' != Path.DirectorySeparatorChar)
+            {
+                if (!File.Exists(filePath))
+                {
+                    throw new FileNotFoundException(null, filePath);
+                }
+
+                FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(filePath);
+                version = versionInfo.FileVersion ?? String.Empty;
+                language = versionInfo.Language ?? String.Empty;
+                return;
+            }
+#endif
+
             int versionLength = 20;
             int languageLength = 20;
             StringBuilder versionBuffer = new StringBuilder(versionLength);

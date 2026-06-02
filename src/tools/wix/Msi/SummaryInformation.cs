@@ -8,6 +8,7 @@ namespace Microsoft.Tools.WindowsInstallerXml.Msi
     using System.Globalization;
     using System.Text;
     using System.Runtime.InteropServices;
+    using System.Runtime.InteropServices.ComTypes;
     using Microsoft.Tools.WindowsInstallerXml.Msi.Interop;
 
     /// <summary>

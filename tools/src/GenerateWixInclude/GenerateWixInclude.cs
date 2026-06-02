@@ -140,7 +140,7 @@ namespace Microsoft.Tools.MsgGen
                     }
 
                     //Console.WriteLine("arg: {0}, length: {1}", arg, arg.Length);
-                    if ('-' == arg[0] || '/' == arg[0])
+                    if ('-' == arg[0] || ('/' == arg[0] && '/' != Path.DirectorySeparatorChar))
                     {
                         string parameter = arg.Substring(1);
                         if ("nologo" == parameter)

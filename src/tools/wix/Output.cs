@@ -328,7 +328,13 @@ namespace Microsoft.Tools.WindowsInstallerXml
                             int bytesRead;
                             byte[] buffer = new byte[512];
 
-                            string originalLocalPath = Path.GetFullPath(baseUri.LocalPath.Substring(1));
+                            string assemblyPath = baseUri.LocalPath;
+                            if ('\\' == Path.DirectorySeparatorChar && assemblyPath.StartsWith("/", StringComparison.Ordinal))
+                            {
+                                assemblyPath = assemblyPath.Substring(1);
+                            }
+
+                            string originalLocalPath = Path.GetFullPath(assemblyPath);
                             string resourceName = baseUri.Fragment.Substring(1);
                             Assembly assembly = Assembly.LoadFile(originalLocalPath);
 

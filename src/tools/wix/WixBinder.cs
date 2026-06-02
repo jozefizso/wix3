@@ -386,6 +386,12 @@ namespace Microsoft.Tools.WindowsInstallerXml
             // during the file transfer process
             if (0 < destinationFiles.Count && !suppressAclReset)
             {
+#if NET
+                if ('\\' != Path.DirectorySeparatorChar)
+                {
+                    return;
+                }
+#endif
                 try
                 {
                     Microsoft.Tools.WindowsInstallerXml.Cab.Interop.NativeMethods.ResetAcls((string[])destinationFiles.ToArray(typeof(string)), (uint)destinationFiles.Count);
