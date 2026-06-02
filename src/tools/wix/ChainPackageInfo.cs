@@ -572,6 +572,13 @@ namespace Microsoft.Tools.WindowsInstallerXml
             string sourcePath = this.PackagePayload.FullFileName;
             bool longNamesInImage = false;
             bool compressed = false;
+#if NET
+            if (ExternalMsiBuilder.UseExternalMsiTools)
+            {
+                this.ResolveMsiPackageWithExternalMsiTools(fileManager, allPayloads, containers, suppressLooseFilePayloadGeneration, enableFeatureSelection, forcePerMachine, bundle, sourcePath);
+                return;
+            }
+#endif
             try
             {
                 // Read data out of the msi database...
@@ -999,6 +1006,347 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 this.core.OnMessage(WixErrors.UnableToReadPackageInformation(this.PackagePayload.SourceLineNumbers, sourcePath, e.Message));
             }
         }
+
+#if NET
+        private void ResolveMsiPackageWithExternalMsiTools(BinderFileManager fileManager, Dictionary<string, PayloadInfoRow> allPayloads, Dictionary<string, ContainerInfo> containers, YesNoType suppressLooseFilePayloadGeneration, YesNoType enableFeatureSelection, YesNoType forcePerMachine, Output bundle, string sourcePath)
+        {
+            try
+            {
+                ExternalMsiInfo info = ExternalMsiInfo.Read(sourcePath);
+
+                bool longNamesInImage = 0 == (info.WordCount & 1);
+                bool compressed = 2 == (info.WordCount & 2);
+                this.PerMachine = (0 == (info.WordCount & 8)) ? YesNoDefaultType.Yes : YesNoDefaultType.No;
+
+                this.ProductCode = info.GetProperty("ProductCode");
+                this.Language = info.GetProperty("ProductLanguage");
+                this.Version = info.GetProperty("ProductVersion");
+
+                if (!Common.IsValidModuleOrBundleVersion(this.Version))
+                {
+                    string version = null;
+                    string[] versionParts = this.Version.Split('.');
+                    int count = versionParts.Length;
+                    if (0 < count)
+                    {
+                        version = versionParts[0];
+                        for (int i = 1; i < 4 && i < count; ++i)
+                        {
+                            version = String.Concat(version, ".", versionParts[i]);
+                        }
+                    }
+
+                    if (!String.IsNullOrEmpty(version) && Common.IsValidModuleOrBundleVersion(version))
+                    {
+                        this.core.OnMessage(WixWarnings.VersionTruncated(this.PackagePayload.SourceLineNumbers, this.Version, sourcePath, version));
+                        this.Version = version;
+                    }
+                    else
+                    {
+                        this.core.OnMessage(WixErrors.InvalidProductVersion(this.PackagePayload.SourceLineNumbers, this.Version, sourcePath));
+                    }
+                }
+
+                if (String.IsNullOrEmpty(this.CacheId))
+                {
+                    this.CacheId = String.Format("{0}v{1}", this.ProductCode, this.Version);
+                }
+
+                if (String.IsNullOrEmpty(this.DisplayName))
+                {
+                    this.DisplayName = info.GetProperty("ProductName");
+                }
+
+                this.Manufacturer = info.GetProperty("Manufacturer");
+
+                if (YesNoType.Yes == forcePerMachine)
+                {
+                    if (YesNoDefaultType.No == this.PerMachine)
+                    {
+                        this.core.OnMessage(WixWarnings.PerUserButForcingPerMachine(this.PackagePayload.SourceLineNumbers, sourcePath));
+                        this.PerMachine = YesNoDefaultType.Yes;
+                    }
+
+                    this.MsiProperties.Add(new MsiPropertyInfo(this.Id, "ALLUSERS", "1"));
+                }
+                else if (info.HasProperty("ALLUSERS"))
+                {
+                    string allusers = info.GetProperty("ALLUSERS");
+                    if (allusers.Equals("1", StringComparison.Ordinal))
+                    {
+                        if (YesNoDefaultType.No == this.PerMachine)
+                        {
+                            this.core.OnMessage(WixErrors.PerUserButAllUsersEquals1(this.PackagePayload.SourceLineNumbers, sourcePath));
+                        }
+                    }
+                    else if (allusers.Equals("2", StringComparison.Ordinal))
+                    {
+                        this.core.OnMessage(WixWarnings.DiscouragedAllUsersValue(this.PackagePayload.SourceLineNumbers, sourcePath, (YesNoDefaultType.Yes == this.PerMachine) ? "machine" : "user"));
+                    }
+                    else
+                    {
+                        this.core.OnMessage(WixErrors.UnsupportedAllUsersValue(this.PackagePayload.SourceLineNumbers, sourcePath, allusers));
+                    }
+                }
+                else if (YesNoDefaultType.Yes == this.PerMachine)
+                {
+                    this.core.OnMessage(WixWarnings.ImplicitlyPerUser(this.PackagePayload.SourceLineNumbers, sourcePath));
+                    this.PerMachine = YesNoDefaultType.No;
+                }
+
+                if (String.IsNullOrEmpty(this.Description) && info.HasProperty("ARPCOMMENTS"))
+                {
+                    this.Description = info.GetProperty("ARPCOMMENTS");
+                }
+
+                bool alreadyVisible = !info.HasProperty("ARPSYSTEMCOMPONENT");
+                if (alreadyVisible != this.Visible)
+                {
+                    bool sysComponentSet = false;
+                    foreach (MsiPropertyInfo propertyInfo in this.MsiProperties)
+                    {
+                        if ("ARPSYSTEMCOMPONENT".Equals(propertyInfo.Name, StringComparison.Ordinal))
+                        {
+                            sysComponentSet = true;
+                            break;
+                        }
+                    }
+
+                    if (!sysComponentSet)
+                    {
+                        this.MsiProperties.Add(new MsiPropertyInfo(this.Id, "ARPSYSTEMCOMPONENT", this.Visible ? "" : "1"));
+                    }
+                }
+
+                if (!info.HasProperty("MSIFASTINSTALL"))
+                {
+                    bool fastInstallSet = false;
+                    foreach (MsiPropertyInfo propertyInfo in this.MsiProperties)
+                    {
+                        if ("MSIFASTINSTALL".Equals(propertyInfo.Name, StringComparison.Ordinal))
+                        {
+                            fastInstallSet = true;
+                            break;
+                        }
+                    }
+
+                    if (!fastInstallSet)
+                    {
+                        this.MsiProperties.Add(new MsiPropertyInfo(this.Id, "MSIFASTINSTALL", "7"));
+                    }
+                }
+
+                this.UpgradeCode = info.GetProperty("UpgradeCode");
+                if (info.HasTable("Upgrade") && !String.IsNullOrEmpty(this.UpgradeCode))
+                {
+                    foreach (Dictionary<string, string> row in info.GetTable("Upgrade"))
+                    {
+                        RelatedPackage related = new RelatedPackage();
+                        related.Id = ExternalMsiInfo.GetString(row, "UpgradeCode");
+                        related.MinVersion = ExternalMsiInfo.GetString(row, "VersionMin");
+                        related.MaxVersion = ExternalMsiInfo.GetString(row, "VersionMax");
+
+                        string languages = ExternalMsiInfo.GetString(row, "Language");
+                        if (!String.IsNullOrEmpty(languages))
+                        {
+                            string[] splitLanguages = languages.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            related.Languages.AddRange(splitLanguages);
+                        }
+
+                        int attributes = ExternalMsiInfo.GetInteger(row, "Attributes");
+                        related.OnlyDetect = ((attributes & MsiInterop.MsidbUpgradeAttributesOnlyDetect) == MsiInterop.MsidbUpgradeAttributesOnlyDetect) && this.UpgradeCode.Equals(related.Id, StringComparison.OrdinalIgnoreCase);
+                        related.MinInclusive = (attributes & MsiInterop.MsidbUpgradeAttributesVersionMinInclusive) == MsiInterop.MsidbUpgradeAttributesVersionMinInclusive;
+                        related.MaxInclusive = (attributes & MsiInterop.MsidbUpgradeAttributesVersionMaxInclusive) == MsiInterop.MsidbUpgradeAttributesVersionMaxInclusive;
+                        related.LangInclusive = (attributes & MsiInterop.MsidbUpgradeAttributesLanguagesExclusive) == 0;
+
+                        this.RelatedPackages.Add(related);
+                    }
+                }
+
+                if (YesNoType.Yes == enableFeatureSelection && info.HasTable("Feature"))
+                {
+                    Dictionary<string, List<string>> featureComponents = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+                    foreach (Dictionary<string, string> row in info.GetTable("FeatureComponents"))
+                    {
+                        string featureName = ExternalMsiInfo.GetString(row, "Feature_");
+                        string componentName = ExternalMsiInfo.GetString(row, "Component_");
+                        List<string> components;
+                        if (!featureComponents.TryGetValue(featureName, out components))
+                        {
+                            components = new List<string>();
+                            featureComponents.Add(featureName, components);
+                        }
+
+                        components.Add(componentName);
+                    }
+
+                    Dictionary<string, List<Dictionary<string, string>>> filesByComponent = new Dictionary<string, List<Dictionary<string, string>>>(StringComparer.Ordinal);
+                    foreach (Dictionary<string, string> row in info.GetTable("File"))
+                    {
+                        string componentName = ExternalMsiInfo.GetString(row, "Component_");
+                        List<Dictionary<string, string>> files;
+                        if (!filesByComponent.TryGetValue(componentName, out files))
+                        {
+                            files = new List<Dictionary<string, string>>();
+                            filesByComponent.Add(componentName, files);
+                        }
+
+                        files.Add(row);
+                    }
+
+                    foreach (Dictionary<string, string> row in info.GetTable("Feature"))
+                    {
+                        MsiFeature feature = new MsiFeature();
+                        feature.Name = ExternalMsiInfo.GetString(row, "Feature");
+                        feature.Size = 0;
+                        feature.Parent = ExternalMsiInfo.GetString(row, "Feature_Parent");
+                        feature.Title = ExternalMsiInfo.GetString(row, "Title");
+                        feature.Description = ExternalMsiInfo.GetString(row, "Description");
+                        feature.Display = ExternalMsiInfo.GetInteger(row, "Display");
+                        feature.Level = ExternalMsiInfo.GetInteger(row, "Level");
+                        feature.Directory = ExternalMsiInfo.GetString(row, "Directory_");
+                        feature.Attributes = ExternalMsiInfo.GetInteger(row, "Attributes");
+                        this.MsiFeatures.Add(feature);
+
+                        List<string> components;
+                        if (featureComponents.TryGetValue(feature.Name, out components))
+                        {
+                            foreach (string componentName in components)
+                            {
+                                List<Dictionary<string, string>> files;
+                                if (filesByComponent.TryGetValue(componentName, out files))
+                                {
+                                    foreach (Dictionary<string, string> fileRow in files)
+                                    {
+                                        feature.Size += ExternalMsiInfo.GetInteger(fileRow, "FileSize");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (info.HasTable("Media"))
+                {
+                    foreach (Dictionary<string, string> row in info.GetTable("Media"))
+                    {
+                        string cabinet = ExternalMsiInfo.GetString(row, "Cabinet");
+                        if (!String.IsNullOrEmpty(cabinet) && !cabinet.StartsWith("#", StringComparison.Ordinal))
+                        {
+                            string cabinetName = Path.Combine(Path.GetDirectoryName(this.PackagePayload.Name), cabinet);
+                            if (!this.IsExistingPayload(cabinetName))
+                            {
+                                string generatedId = Common.GenerateIdentifier("cab", true, this.PackagePayload.Id, cabinet);
+                                string payloadSourceFile = fileManager.ResolveRelatedFile(this.PackagePayload.UnresolvedSourceFile, cabinet, "Cabinet", this.PackagePayload.SourceLineNumbers, BindStage.Normal);
+
+                                PayloadInfoRow payloadNew = PayloadInfoRow.Create(this.SourceLineNumbers, bundle, generatedId, cabinetName, payloadSourceFile, true, this.PackagePayload.SuppressSignatureValidation, null, this.PackagePayload.Container, this.PackagePayload.Packaging);
+                                payloadNew.ParentPackagePayload = this.PackagePayload.Id;
+                                if (!String.IsNullOrEmpty(payloadNew.Container))
+                                {
+                                    containers[payloadNew.Container].Payloads.Add(payloadNew);
+                                }
+
+                                this.Payloads.Add(payloadNew);
+                                allPayloads.Add(payloadNew.Id, payloadNew);
+
+                                this.Size += payloadNew.FileSize;
+                            }
+                        }
+                    }
+                }
+
+                this.InstallSize = 0;
+                if (info.HasTable("Component") && info.HasTable("Directory") && info.HasTable("File"))
+                {
+                    Hashtable directories = new Hashtable();
+                    foreach (Dictionary<string, string> row in info.GetTable("Directory"))
+                    {
+                        string sourceName = Installer.GetName(ExternalMsiInfo.GetString(row, "DefaultDir"), true, longNamesInImage);
+                        directories.Add(ExternalMsiInfo.GetString(row, "Directory"), new ResolvedDirectory(ExternalMsiInfo.GetString(row, "Directory_Parent"), sourceName));
+                    }
+
+                    Dictionary<string, string> componentDirectories = new Dictionary<string, string>(StringComparer.Ordinal);
+                    foreach (Dictionary<string, string> row in info.GetTable("Component"))
+                    {
+                        componentDirectories[ExternalMsiInfo.GetString(row, "Component")] = ExternalMsiInfo.GetString(row, "Directory_");
+                    }
+
+                    foreach (Dictionary<string, string> row in info.GetTable("File"))
+                    {
+                        string directoryId;
+                        if (!componentDirectories.TryGetValue(ExternalMsiInfo.GetString(row, "Component_"), out directoryId))
+                        {
+                            continue;
+                        }
+
+                        int attributes = ExternalMsiInfo.GetInteger(row, "Attributes");
+
+                        if (suppressLooseFilePayloadGeneration != YesNoType.Yes)
+                        {
+                            if (MsiInterop.MsidbFileAttributesNoncompressed == (attributes & MsiInterop.MsidbFileAttributesNoncompressed) ||
+                                (!compressed && 0 == (attributes & MsiInterop.MsidbFileAttributesCompressed)))
+                            {
+                                string fileId = ExternalMsiInfo.GetString(row, "File");
+                                string generatedId = Common.GenerateIdentifier("f", true, this.PackagePayload.Id, fileId);
+                                string fileSourcePath = Binder.GetFileSourcePath(directories, directoryId, ExternalMsiInfo.GetString(row, "FileName"), compressed, longNamesInImage);
+                                string payloadSourceFile = fileManager.ResolveRelatedFile(this.PackagePayload.UnresolvedSourceFile, fileSourcePath, "File", this.PackagePayload.SourceLineNumbers, BindStage.Normal);
+                                string name = Path.Combine(Path.GetDirectoryName(this.PackagePayload.Name), fileSourcePath);
+
+                                if (!this.IsExistingPayload(name))
+                                {
+                                    PayloadInfoRow payloadNew = PayloadInfoRow.Create(this.SourceLineNumbers, bundle, generatedId, name, payloadSourceFile, true, this.PackagePayload.SuppressSignatureValidation, null, this.PackagePayload.Container, this.PackagePayload.Packaging);
+                                    payloadNew.ParentPackagePayload = this.PackagePayload.Id;
+                                    if (!String.IsNullOrEmpty(payloadNew.Container))
+                                    {
+                                        containers[payloadNew.Container].Payloads.Add(payloadNew);
+                                    }
+
+                                    this.Payloads.Add(payloadNew);
+                                    allPayloads.Add(payloadNew.Id, payloadNew);
+
+                                    this.Size += payloadNew.FileSize;
+                                }
+                            }
+                        }
+
+                        this.InstallSize += ExternalMsiInfo.GetInteger(row, "FileSize");
+                    }
+                }
+
+                if (info.HasTable("WixDependencyProvider"))
+                {
+                    foreach (Dictionary<string, string> row in info.GetTable("WixDependencyProvider"))
+                    {
+                        bool hasVersion = row.ContainsKey("Version");
+                        string providerKey = ExternalMsiInfo.GetString(row, "ProviderKey");
+                        ProvidesDependency dependency;
+
+                        if (hasVersion)
+                        {
+                            string version = ExternalMsiInfo.GetString(row, "Version") ?? this.Version;
+                            string displayName = ExternalMsiInfo.GetString(row, "DisplayName") ?? this.DisplayName;
+                            int? attributes = ExternalMsiInfo.GetNullableInteger(row, "Attributes");
+
+                            dependency = new ProvidesDependency(providerKey, version, displayName, attributes);
+                        }
+                        else
+                        {
+                            int? attributes = ExternalMsiInfo.GetNullableInteger(row, "Attributes");
+
+                            dependency = new ProvidesDependency(providerKey, this.Version, this.DisplayName, attributes);
+                        }
+
+                        dependency.Imported = true;
+                        this.Provides.Add(dependency);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                this.core.OnMessage(WixErrors.UnableToReadPackageInformation(this.PackagePayload.SourceLineNumbers, sourcePath, e.Message));
+            }
+        }
+#endif
 
         /// <summary>
         /// Determines whether a payload with the same name already exists.

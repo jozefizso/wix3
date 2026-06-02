@@ -3,6 +3,7 @@
 namespace Microsoft.Tools.WindowsInstallerXml.Cab
 {
     using System;
+    using System.IO;
     using System.Runtime.InteropServices;
     using Microsoft.Tools.WindowsInstallerXml.Cab.Interop;
 
@@ -12,12 +13,22 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
     public sealed class WixExtractCab : IDisposable
     {
         private bool disposed;
+#if NET
+        private readonly bool useExternalCabTool;
+#endif
 
         /// <summary>
         /// Creates a cabinet extractor.
         /// </summary>
         public WixExtractCab()
         {
+#if NET
+            this.useExternalCabTool = ExternalCabTool.UseExternalCabTools;
+            if (this.useExternalCabTool)
+            {
+                return;
+            }
+#endif
             NativeMethods.ExtractCabBegin();
         }
 
@@ -51,6 +62,22 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
                 throw new ObjectDisposedException("WixExtractCab");
             }
 
+#if NET
+            if (this.useExternalCabTool)
+            {
+                Directory.CreateDirectory(extractDir);
+
+                string cabextract = ExternalCabTool.FindTool("WIX_CABEXTRACT_PATH", "cabextract");
+                int exitCode = ExternalCabTool.Run(cabextract, null, "-q", "-d", extractDir, cabinetFile);
+                if (0 != exitCode)
+                {
+                    throw new WixException(WixErrors.CabExtractionFailed(cabinetFile, extractDir));
+                }
+
+                return;
+            }
+#endif
+
             if (!extractDir.EndsWith("\\", StringComparison.Ordinal))
             {
                 extractDir = String.Concat(extractDir, "\\");
@@ -66,6 +93,14 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
         {
             if (!this.disposed)
             {
+#if NET
+                if (this.useExternalCabTool)
+                {
+                    GC.SuppressFinalize(this);
+                    this.disposed = true;
+                    return;
+                }
+#endif
                 NativeMethods.ExtractCabFinish();
 
                 GC.SuppressFinalize(this);

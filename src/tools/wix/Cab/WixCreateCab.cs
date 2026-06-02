@@ -3,6 +3,7 @@
 namespace Microsoft.Tools.WindowsInstallerXml.Cab
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Runtime.InteropServices;
@@ -40,6 +41,13 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
         private IntPtr handle = IntPtr.Zero;
         private bool disposed;
         private int maxSize;
+#if NET
+        private readonly bool useExternalCabTool;
+        private readonly string cabName;
+        private readonly string cabDir;
+        private readonly CompressionLevel compressionLevel;
+        private readonly List<Tuple<string, string>> externalFiles = new List<Tuple<string, string>>();
+#endif
 
         /// <summary>
         /// Creates a cabinet.
@@ -72,6 +80,17 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
             {
                 cabDir = Directory.GetCurrentDirectory();
             }
+
+#if NET
+            this.useExternalCabTool = ExternalCabTool.UseExternalCabTools;
+            if (this.useExternalCabTool)
+            {
+                this.cabName = cabName;
+                this.cabDir = cabDir;
+                this.compressionLevel = compressionLevel;
+                return;
+            }
+#endif
 
             try
             {
@@ -163,6 +182,19 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
         /// <param name="fileHash">The MSI file hash of the file.</param>
         private void AddFile(string file, string token, MsiInterop.MSIFILEHASHINFO fileHash)
         {
+#if NET
+            if (this.useExternalCabTool)
+            {
+                if (!File.Exists(file))
+                {
+                    throw new WixFileNotFoundException(file);
+                }
+
+                this.externalFiles.Add(Tuple.Create(file, token));
+                return;
+            }
+#endif
+
             try
             {
                 NativeMethods.CreateCabAddFile(file, token, fileHash, this.handle);
@@ -209,6 +241,14 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
         /// <param name="newCabNamesCallBackAddress">Address of Binder's callback function for Cabinet Splitting</param>
         public void Complete(IntPtr newCabNamesCallBackAddress)
         {
+#if NET
+            if (this.useExternalCabTool)
+            {
+                this.CompleteWithExternalCabTool(newCabNamesCallBackAddress);
+                return;
+            }
+#endif
+
             if (IntPtr.Zero != this.handle)
             {
                 try
@@ -256,6 +296,15 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
         {
             if (!this.disposed)
             {
+#if NET
+                if (this.useExternalCabTool)
+                {
+                    GC.SuppressFinalize(this);
+                    this.disposed = true;
+                    return;
+                }
+#endif
+
                 if (IntPtr.Zero != this.handle)
                 {
                     NativeMethods.CreateCabCancel(this.handle);
@@ -266,5 +315,76 @@ namespace Microsoft.Tools.WindowsInstallerXml.Cab
                 this.disposed = true;
             }
         }
+
+#if NET
+        private void CompleteWithExternalCabTool(IntPtr newCabNamesCallBackAddress)
+        {
+            string cabinetPath = Path.Combine(this.cabDir, this.cabName);
+            string workDirectory = Path.Combine(Path.GetTempPath(), String.Concat("wixcab-", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)));
+            List<string> arguments = new List<string>();
+
+            if (newCabNamesCallBackAddress != IntPtr.Zero && 0 != this.maxSize)
+            {
+                throw new WixException(WixErrors.CabCreationFailed(cabinetPath, 1));
+            }
+
+            try
+            {
+                Directory.CreateDirectory(this.cabDir);
+                Directory.CreateDirectory(workDirectory);
+
+                arguments.Add("-c");
+                arguments.Add("-n");
+
+                if (CompressionLevel.None != this.compressionLevel)
+                {
+                    arguments.Add("-z");
+                }
+
+                arguments.Add(cabinetPath);
+
+                foreach (Tuple<string, string> externalFile in this.externalFiles)
+                {
+                    string token = externalFile.Item2;
+                    string stagedFile = Path.Combine(workDirectory, token);
+                    string stagedDirectory = Path.GetDirectoryName(stagedFile);
+
+                    if (!String.IsNullOrEmpty(stagedDirectory))
+                    {
+                        Directory.CreateDirectory(stagedDirectory);
+                    }
+
+                    File.Copy(externalFile.Item1, stagedFile, true);
+                    arguments.Add(token);
+                }
+
+                string gcab = ExternalCabTool.FindTool("WIX_GCAB_PATH", "gcab");
+                int exitCode = ExternalCabTool.Run(gcab, workDirectory, arguments.ToArray());
+                if (0 != exitCode)
+                {
+                    throw new WixException(WixErrors.CabCreationFailed(cabinetPath, exitCode));
+                }
+
+                GC.SuppressFinalize(this);
+                this.disposed = true;
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(workDirectory))
+                    {
+                        Directory.Delete(workDirectory, true);
+                    }
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+#endif
     }
 }

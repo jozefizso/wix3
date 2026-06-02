@@ -324,7 +324,7 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     continue;
                 }
 
-                if ('-' == arg[0] || '/' == arg[0])
+                if (CommandLine.IsSwitch(arg))
                 {
                     string parameter = arg.Substring(1);
                     if (parameter.Equals("bcgg", StringComparison.Ordinal))
@@ -560,6 +560,13 @@ namespace Microsoft.Tools.WindowsInstallerXml
             }
 
             // tell the binder about the validator if validation isn't suppressed
+#if NET
+            if (ExternalMsiBuilder.UseExternalMsiTools && (OutputType.Module == output.Type || OutputType.Product == output.Type))
+            {
+                this.validator = null;
+            }
+            else
+#endif
             if (!this.suppressValidation && (OutputType.Module == output.Type || OutputType.Product == output.Type))
             {
                 if (String.IsNullOrEmpty(this.validator.TempFilesLocation))
@@ -777,6 +784,14 @@ namespace Microsoft.Tools.WindowsInstallerXml
                 // make sure the directory exists
                 Directory.CreateDirectory(baseDirectory);
             }
+
+#if NET
+            if (ExternalMsiBuilder.UseExternalMsiTools && ExternalMsiBuilder.CanBuild(output))
+            {
+                ExternalMsiBuilder.GenerateDatabase(output, databaseFile, output.Codepage, this.core, baseDirectory, keepAddedColumns);
+                return;
+            }
+#endif
 
             try
             {
@@ -1123,6 +1138,30 @@ namespace Microsoft.Tools.WindowsInstallerXml
             }
 
             return fileSourcePath;
+        }
+
+        private static string ResolveBurnStubFile(string stubPlatform)
+        {
+            string configuredStub = Environment.GetEnvironmentVariable("WIX_BURN_ENGINE_PATH");
+            if (!String.IsNullOrEmpty(configuredStub))
+            {
+                return configuredStub;
+            }
+
+            string configuredDirectory = Environment.GetEnvironmentVariable("WIX_BURN_ENGINE_DIR");
+            if (!String.IsNullOrEmpty(configuredDirectory))
+            {
+                string platformStub = Path.Combine(configuredDirectory, stubPlatform, "burn.exe");
+                if (File.Exists(platformStub))
+                {
+                    return platformStub;
+                }
+
+                return Path.Combine(configuredDirectory, "burn.exe");
+            }
+
+            string wixExeDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), stubPlatform);
+            return Path.Combine(wixExeDirectory, "burn.exe");
         }
 
         /// <summary>
@@ -2433,7 +2472,13 @@ namespace Microsoft.Tools.WindowsInstallerXml
                     int bytesRead;
                     byte[] buffer = new byte[512];
 
-                    string originalLocalPath = Path.GetFullPath(baseUri.LocalPath.Substring(1));
+                    string assemblyPath = baseUri.LocalPath;
+                    if ('\\' == Path.DirectorySeparatorChar && assemblyPath.StartsWith("/", StringComparison.Ordinal))
+                    {
+                        assemblyPath = assemblyPath.Substring(1);
+                    }
+
+                    string originalLocalPath = Path.GetFullPath(assemblyPath);
                     string resourceName = baseUri.Fragment.Substring(1);
                     Assembly assembly = Assembly.LoadFile(originalLocalPath);
 
@@ -3820,10 +3865,9 @@ namespace Microsoft.Tools.WindowsInstallerXml
             }
             else
             {
-                stubPlatform = bundleInfo.Platform.ToString();
+                stubPlatform = bundleInfo.Platform.ToString().ToLower(CultureInfo.InvariantCulture);
             }
-            string wixExeDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), stubPlatform);
-            string stubFile = Path.Combine(wixExeDirectory, "burn.exe");
+            string stubFile = Binder.ResolveBurnStubFile(stubPlatform);
             string bundleTempPath = Path.Combine(this.TempFilesLocation, Path.GetFileName(bundleFile));
 
             this.core.OnMessage(WixVerboses.GeneratingBundle(bundleTempPath, stubFile));
@@ -4753,6 +4797,13 @@ namespace Microsoft.Tools.WindowsInstallerXml
 
         private void UpdateBurnResources(string bundleTempPath, string outputPath, WixBundleRow bundleInfo)
         {
+#if NET
+            if (ExternalMsiBuilder.UseExternalMsiTools)
+            {
+                return;
+            }
+#endif
+
             Microsoft.Deployment.Resources.ResourceCollection resources = new Microsoft.Deployment.Resources.ResourceCollection();
             Microsoft.Deployment.Resources.VersionResource version = new Microsoft.Deployment.Resources.VersionResource("#1", 1033);
 
